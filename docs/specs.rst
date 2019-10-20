@@ -36,7 +36,7 @@ Combined Authority Document has the following structure:
 
     {
         "combined-id-n": {"value": "value definition",
-                          "contains": ["simple-no-0"]}
+                          "contains": {0: "simple-no-0"}}
     }
 
 Keys are of type string. Their value is a :code:`json` object, which has a
@@ -56,11 +56,23 @@ Predicate Document has the following structure:
 .. code:: json
 
     {
-        "predicate-no-0": {"simple-id-0": [
-            "combined-id-0",
-            "combined-id-1",
-            "simple-id-0",
-        ]}
+        "predicate-no-0": {
+            "simple-id-0": {
+                0: "combined-id-0",
+                1: "combined-id-1",
+                2: "simple-id-0",
+            }
+        },
+        "predicate-no-1": {
+            "combined-id-123": {
+                0: "combined-id-0",
+                1: "simple-id-12",
+            },
+            "combined-id-12": {
+                0: "predicate-id-0",
+                1: "predicate-id-1",
+            }
+        }
     }
 
 Basically it is very much like Combined Authority Document, with the
@@ -72,10 +84,12 @@ Entity Document
 
 .. code:: json
 
-    {"entity-1": {"another-simple-id-no-0": ["simple-id-no-1"]},
-    "entity-2": {"another-simple-id-no-0": ["simple-id-no-2"]} ,
-    "entity-3": {"another-simple-id-no-0": ["simple-id-no-3"]} ,
-    "entity-0": {"another-simple-id-no-1": ["entity-1", "entity-2", "entity-3"]}
+    {"entity-1": {"another-simple-id-no-0": {0: "simple-id-no-1"}},
+     "entity-2": {"another-simple-id-no-0": {0: "simple-id-no-2"}} ,
+     "entity-3": {"another-simple-id-no-0": {0: "simple-id-no-3"}} ,
+     "entity-0": {"combined-id-no-1": {0: "entity-1", 
+                                       1: "entity-2", 
+                                       2: "entity-3"}}
     }
 
 Very much like a Predicate Document, with the difference that it can point to
@@ -87,8 +101,8 @@ Finally the Entity Predicate Relations Document
 
 .. code:: json
 
-    {"entity-1": {"simple-id-0": ["predicate-1", "predicate-2"]}, 
-    "entity-2": {"simple-id-1": ["predicate-2"]}
+    {"entity-1": {"simple-id-0": {0: "predicate-1", 1: "predicate-2"}}, 
+    "entity-2": {"simple-id-1": {0: "predicate-2"}}
     }
 
 So far the only relations between a Predicate Document part and an Entity

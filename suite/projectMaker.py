@@ -77,6 +77,18 @@ def mk_simple_authority(author_dir: str) -> str:
     return simple_dir
 
 
+def mk_project_dirs(mainpath: str, project_name: str):
+    "make project directories"
+    project_dir = mk_project_dir(mainpath, project_name)
+    asset_dir = mk_project_assets(project_dir)
+    predicate_dir = mk_project_predicate(asset_dir)
+    link_dir = mk_project_link(asset_dir)
+    entity_dir = mk_project_entity(asset_dir)
+    author_dir = mk_project_authority(predicate_dir)
+    simple_dir = mk_simple_authority(author_dir)
+    return simple_dir, author_dir, entity_dir, link_dir, predicate_dir
+
+
 def mk_sample_document(parent_path: str,
                        doc_name: str, sample_doc: dict) -> None:
     "make sample document given parent path and its name with its structure"
@@ -131,20 +143,23 @@ def mk_sample_entity_predicate_link(asset_path: str) -> None:
         asset_path, "sampleEntityPredicateLink.json", sample_doc)
 
 
-if __name__ == "__main__":
-    main_path = input("enter parent directory for project: ")
-    project_name = input("Enter a project name: ")
-    main_dir = os.path.abspath(main_path)
-    project_dir = mk_project_dir(main_path, project_name)
-    asset_dir = mk_project_assets(project_dir)
-    predicate_dir = mk_project_predicate(asset_dir)
-    link_dir = mk_project_link(asset_dir)
-    entity_dir = mk_project_entity(asset_dir)
-    author_dir = mk_project_authority(predicate_dir)
-    simple_dir = mk_simple_authority(author_dir)
+def make_samples_proc(simple_dir, author_dir,
+                      predicate_dir, entity_dir, link_dir):
+    "make samples procedure"
     mk_sample_simple_authority(simple_dir)
     mk_sample_combined_authority(author_dir)
     mk_sample_predicate(predicate_dir)
     mk_sample_entity_relation(entity_dir)
     mk_sample_entity_predicate_link(link_dir)
+
+
+if __name__ == "__main__":
+    main_path = input("enter parent directory for project: ")
+    project_name = input("Enter a project name: ")
+    main_dir = os.path.abspath(main_path)
+    (simple_dir, author_dir,
+     entity_dir, link_dir, predicate_dir) = mk_project_dirs(main_dir,
+                                                            project_name)
+    make_samples_proc(simple_dir, author_dir, predicate_dir, entity_dir,
+                      link_dir)
     print("project structure done")
