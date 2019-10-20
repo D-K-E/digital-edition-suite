@@ -1,6 +1,6 @@
 ######################
 digital-edition-suite
-#######################
+######################
 
 Small scripts to publish digital editions using authority files easier.
 This is intended as small collection of scripts that are not necessarily scalable, 
