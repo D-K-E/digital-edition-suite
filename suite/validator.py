@@ -45,9 +45,9 @@ def check_key_value_string_object(obj: dict):
     return True
 
 
-def check_key_value_int(key: int, value: str):
+def check_key_value_int(key: str, value: str):
     "validate key and value for integer keys"
-    return bool(isinstance(key, int) and isinstance(value, str))
+    return bool(key.isdigit() and isinstance(value, str))
 
 
 def check_key_value_int_object(obj: dict):
@@ -70,7 +70,7 @@ def check_key_key_value_int_object(key: str, obj: dict) -> bool:
     check key and value int object
 
     assumed structure
-    {"my-string-key": {0: "my value string", 1: "my other string"}}
+    {"my-string-key": {"0": "my value string", "1": "my other string"}}
     """
     if not isinstance(key, str):
         return False
@@ -133,7 +133,7 @@ def validate_combined_authority_structure(author_file: dict) -> bool:
 
     {
         "combined-id-n": {"value": "value definition",
-                          "simple-id-no-1": {0: "simple-no-0"}
+                          "simple-id-no-1": {"0": "simple-no-0"}
                           }
     }
     """
@@ -143,7 +143,7 @@ def validate_combined_authority_structure(author_file: dict) -> bool:
         "combined-id-n": {
             "value": "value definition",
             "simple-id-no-1": {
-                0: "simple-no-0"
+                "0": "simple-no-0"
             }
         }
     }
@@ -172,10 +172,10 @@ def validate_entity_predicate_structure(predicate_file: dict) -> bool:
 
     assumed structure
 
-    {   "entity/predicate-1": {"another-simple-id-no-0": {0: "simple-id-no-1"}},
+    {   "entity/predicate-1": {"another-simple-id-no-0": {"0": "simple-id-no-1"}},
         "entity/predicate-2": {
             "another-simple/combined-id-no-0": {
-                0: "simple-id-no-2"
+                "0": "simple-id-no-2"
             }
         }
     }
@@ -265,7 +265,7 @@ def validate_combined_authority_content(author_file: dict,
         "combined-id-n": {
             "value": "value definition",
             "simple-id-no-1": {
-                0: "simple-no-0"
+                "0": "simple-no-0"
             }
         }
     }
@@ -285,15 +285,15 @@ def validate_entity_predicate_content(entity_predicate_file: dict,
                                       simple_combined_ids: list) -> list:
     "validate predicate file content"
     assumed_structure = """
-    {   "entity/predicate-1": {"another-simple-id-no-0": {0: "simple-id-no-1"}},
+    {   "entity/predicate-1": {"another-simple-id-no-0": {"0": "simple-id-no-1"}},
         "entity/predicate-2": {
             "another-simple/combined-id-no-0": {
-                0: "simple-id-no-2"
+                "0": "simple-id-no-2"
             }
         },
     "entity/predicate-3": {
             "another-simple/combined-id-no-0": {
-                0: "entity/predicate-id-no-2"
+                "0": "entity/predicate-id-no-2"
             }
         }
     }
