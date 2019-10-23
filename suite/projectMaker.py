@@ -99,15 +99,37 @@ def mk_sample_document(parent_path: str,
 
 def mk_sample_simple_authority(simple_dir: str) -> None:
     "make a sample simple authority document"
-    sample_doc = {"sample-id-0": "sample-value", "sample-id-1": "sample value"}
+    sample_doc = {
+        "sample-word-1": {"lorem": ""},
+        "sample-word-2": {"ipsum": ""},
+        "sample-word-3": {"dolor": ""},
+        "sample-word-4": {"sit": ""},
+        "sample-word-5": {"amet": ""},
+        "sample-simple-n": {"value": "value definition"}
+    }
     mk_sample_document(simple_dir, "sampleSimple.json", sample_doc)
 
 
 def mk_sample_combined_authority(author_dir: str) -> None:
     "make a sample combined authority document"
     sample_doc = {
-        "combined-id-0": {"value": "value definition",
-                          "contains": ["sample-id-0"]}
+        "sample-combined-grammar-1": {
+            "coordinating conjunction": "",
+            "sample-relation-2": {"0": "sample-grammar-1"}
+        },
+        "sample-combined-grammar-2": {
+            "feminine substantif": "",
+            "sample-relation-2": {
+                "0": "sample-grammar-6", "1": "sample-grammar-2"
+            }
+        },
+        "sample-combined-n": {
+            "value": "value definition",
+            "sample-relation-n": {
+                "0": "sample-simple-id",
+                "1": "sample-simple-id-n"
+            }
+        }
     }
     mk_sample_document(author_dir, "sampleCombinedSimple.json", sample_doc)
 
@@ -115,11 +137,14 @@ def mk_sample_combined_authority(author_dir: str) -> None:
 def mk_sample_predicate(asset_path: str) -> None:
     "make sample predicate document"
     sample_doc = {
-        "predicate-no-0": {"simple-id-0": [
-            "combined-id-0",
-            "combined-id-1",
-            "simple-id-0",
-        ]}
+        "sample-predicate-1": {
+            "sample-relation-3": {
+                "0": "sample-combined-grammar-2",
+                "1": "sample-grammar-5",
+                "2": "sample-grammar-7",
+            },
+            "sample-relation-1": {"0": "sample-word-3"}
+        }
     }
     mk_sample_document(asset_path, "samplePredicate.json", sample_doc)
 
@@ -127,17 +152,25 @@ def mk_sample_predicate(asset_path: str) -> None:
 def mk_sample_entity_relation(asset_path: str) -> None:
     "make sample entity relations document"
     sample_doc = {
-        "entity-no-0": {"simple-id-0": ["entity-no-1",
-                                        "entity-no-2"],
-                        "simple-id-1": ["another-simple-id-0"]}
+        "sample-entity-1": {
+            "sample-relation-1": {"0": "sample-word-2"}
+        },
+        "sample-entity-2": {
+            "sample-relation-2": {"0": "sample-entity-1"}
+        }
     }
     mk_sample_document(asset_path, "sampleEntityRelations.json", sample_doc)
 
 
 def mk_sample_entity_predicate_link(asset_path: str) -> None:
-    "make sample predicate document"
+    "make sample entity predicate link document"
     sample_doc = {
-        "entity-no-0": ["predicate-no-0", "predicate-no-1"]
+        "sample-entity-1": {
+            "sample-relation-3": {"0": "sample-predicate-1"}
+        },
+        "sample-entity-2": {
+            "sample-relation-3": {"0": "sample-predicate-2"}
+        }
     }
     mk_sample_document(
         asset_path, "sampleEntityPredicateLink.json", sample_doc)

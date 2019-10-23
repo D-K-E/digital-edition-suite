@@ -1,0 +1,15 @@
+{
+    "sample-combined-grammar-1": {
+        "coordinating conjunction": "",
+        "sample-relation-2": {
+            "0": "sample-grammar-1"
+        }
+    },
+    "sample-combined-grammar-2": {
+        "feminine substantif": "",
+        "sample-relation-2": {
+            "0": "sample-grammar-6",
+            "1": "sample-grammar-2"
+        }
+    }
+}

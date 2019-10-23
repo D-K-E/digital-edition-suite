@@ -16,7 +16,7 @@ def read_json(jsonpath: str) -> dict:
     return myfile
 
 
-def get_keys_array_from_object(obj: dict):
+def get_keys_array_from_object(obj: dict) -> dict:
     "get keys that are associated to objects from object"
     array_container = {}
     for key, value in obj.items():
@@ -27,7 +27,13 @@ def get_keys_array_from_object(obj: dict):
 
 def check_key_value_string(key: str, value: str):
     "validate key and value for string"
-    return bool(isinstance(key, str) and isinstance(value, str))
+    if not isinstance(key, str):
+        return False
+    if not isinstance(value, str):
+        return False
+    if key.isdigit():
+        return False
+    return True
 
 
 def check_key_value_string_object(obj: dict):
@@ -47,7 +53,13 @@ def check_key_value_string_object(obj: dict):
 
 def check_key_value_int(key: str, value: str):
     "validate key and value for integer keys"
-    return bool(key.isdigit() and isinstance(value, str))
+    if not isinstance(key, str):
+        return False
+    if not isinstance(value, str):
+        return False
+    if not key.isdigit():
+        return False
+    return True
 
 
 def check_key_value_int_object(obj: dict):
@@ -55,7 +67,7 @@ def check_key_value_int_object(obj: dict):
     apply check key value to int object
 
     assumed structure
-    {0: "my value string", 1: "my other string"}
+    {"0": "my value string", "1": "my other string"}
     """
     if not isinstance(obj, dict):
         return False
@@ -106,7 +118,7 @@ def validate_simple_authority_structure(author_file: dict) -> bool:
      }
     """
     assumed_structure = """
-    {"simple-no-1": {"some-value": "value definition"},
+    {"simple-sample-word-1": {"lorem": ""},
      "simple-no-n": {"some-value": "value definition"}
      }
     """
@@ -132,18 +144,29 @@ def validate_combined_authority_structure(author_file: dict) -> bool:
     ----------------------
 
     {
-        "combined-id-n": {"value": "value definition",
-                          "simple-id-no-1": {"0": "simple-no-0"}
-                          }
+        "sample-combined-grammar-1": {
+            "coordinating conjunction": "",
+            "sample-relation-2": {"0": "sample-grammar-1"}
+        },
+        "sample-combined-grammar-2": {
+            "feminine substantif": "",
+            "sample-relation-2": {
+                "0": "sample-grammar-6", "1": "sample-grammar-2"
+            }
+        }
     }
     """
     keys = set()
     assumed_structure = """
     {
-        "combined-id-n": {
-            "value": "value definition",
-            "simple-id-no-1": {
-                "0": "simple-no-0"
+        "sample-combined-grammar-1": {
+            "coordinating conjunction": "",
+            "sample-relation-2": {"0": "sample-grammar-1"}
+        },
+        "sample-combined-grammar-2": {
+            "feminine substantif": "",
+            "sample-relation-2": {
+                "0": "sample-grammar-6", "1": "sample-grammar-2"
             }
         }
     }
@@ -321,5 +344,3 @@ def validate_entity_predicate_link_content(link_file: dict,
                 if predicate not in predicate_ids:
                     return False, entity_id, link_values
     return [True]
-
-

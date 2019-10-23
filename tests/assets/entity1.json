@@ -1,0 +1,12 @@
+{
+    "sample-entity-1": {
+        "sample-relation-1": {
+            "0": "sample-word-2"
+        }
+    },
+    "sample-entity-2": {
+        "sample-relation-2": {
+            "0": "sample-entity-1"
+        }
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "sample-relation-1": {
+        "equals": ""
+    },
+    "sample-relation-2": {
+        "contains": ""
+    },
+    "sample-relation-3": {
+        "defined as": ""
+    },
+    "sample-relation-4": {
+        "is not": ""
+    }
+}

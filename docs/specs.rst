@@ -2,7 +2,13 @@
 Specifications
 ###############
 
-This document contains specifications for the authority files that is used and
+Wording in this document conforms to `RFC 2119
+<https://tools.ietf.org/html/rfc2119>`_.
+
+Format
+======
+
+This document contains specifications for the files that is used and
 produced in this project.
 
 There are 4 main types of document that this suite uses:
@@ -109,3 +115,38 @@ So far the only relations between a Predicate Document part and an Entity
 Document part is that of definition, meaning that we act as if the set of
 predicates define the entity. However the schema is extensible to other
 relations that can be conceived between a set of predicates and an entity.
+
+
+Recommendations
+===============
+
+One should standardise the set of relations between a set of predicates and an
+entity. Thus at least one simple authority document should be reserved for
+relations between a set of predicates and an entity. These relations can be
+used outside of their context, but not the inverse, that is a set of
+predicates and an entity can not use other relations besides these. This
+standardisation procedure is recommended for other documents that use
+relations as well. It is necessary to decide this early on since it governs
+the mathematical model underlaying the project.
+
+
+One should also distinguish another representation of a phenomenon from its
+definition, a definition can be applied to multiple representations of a
+phenomenon, and a representation is that which one can apply the definition of
+a phenomenon. A suggestion might be to use "defined as" relation for terms of
+definitions and "equals" for representations.
+
+Qualifiers for representations of phenomena can be implemented using relations
+as well. It is recommended to use combined authority documents for modeling
+these qualifiers.
+
+Another suggestion is to use active verbs when defining relations since they
+should lend themselves easily to a usage of functions. They are treated in
+effect as a function where the domain is the parent item containing it and
+co-domain is the array of items that it maps to, so active verbs help with
+their modeling.
+
+Relations must be differentiable, that is for each parent item, the relation
+must map to only a unique set of items. When given a parent item, and
+a relation, there must be only one output that results from an evaluation of
+relation on parent item.

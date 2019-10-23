@@ -1,0 +1,29 @@
+{
+    "sample-grammar-1": {
+        "conjunction": ""
+    },
+    "sample-grammar-2": {
+        "substantif": ""
+    },
+    "sample-grammar-3": {
+        "verb": ""
+    },
+    "sample-grammar-4": {
+        "subject": ""
+    },
+    "sample-grammar-5": {
+        "nominative": ""
+    },
+    "sample-grammar-6": {
+        "feminine": ""
+    },
+    "sample-grammar-7": {
+        "singular": ""
+    },
+    "sample-grammar-8": {
+        "plural": ""
+    },
+    "sample-grammar-9": {
+        "dual": ""
+    }
+}

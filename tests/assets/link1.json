@@ -1,0 +1,12 @@
+{
+    "sample-entity-1": {
+        "sample-relation-3": {
+            "0": "sample-predicate-1"
+        }
+    },
+    "sample-entity-2": {
+        "sample-relation-3": {
+            "0": "sample-predicate-2"
+        }
+    }
+}

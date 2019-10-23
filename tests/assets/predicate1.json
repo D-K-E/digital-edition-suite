@@ -1,0 +1,12 @@
+{
+    "sample-predicate-1": {
+        "sample-relation-3": {
+            "0": "sample-combined-grammar-2",
+            "1": "sample-grammar-5",
+            "2": "sample-grammar-7"
+        },
+        "sample-relation-1": {
+            "0": "sample-word-3"
+        }
+    }
+}
