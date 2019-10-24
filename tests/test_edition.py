@@ -11,6 +11,7 @@ from suite import validator as vd
 import os
 import json
 import shutil
+import pdb
 
 
 class TestDigitalEditionSuite(unittest.TestCase):
@@ -223,6 +224,58 @@ class TestDigitalEditionSuite(unittest.TestCase):
         self.assertEqual(check1[0], True)
         self.assertEqual(check2[0], True)
         self.assertEqual(check3[0], True)
+
+    def test_validate_combined_authority_content(self):
+        ""
+        doc1 = vd.read_json(self.combined_doc_path)
+        simples1 = ["sample-relation-2",
+                    "sample-grammar-1",
+                    "sample-grammar-6",
+                    "sample-grammar-2"]
+        simples2 = ["sample-relation-2",
+                    "sample-grammar-5",
+                    "sample-grammar-6",
+                    "sample-grammar-2"]
+        check1 = vd.validate_combined_authority_content(doc1, simples1)
+        check2 = vd.validate_combined_authority_content(doc1, simples2)
+        self.assertEqual(True, check1[0])
+        self.assertEqual(False, check2[0])
+
+    def test_validate_predicate_entity_content(self):
+        ""
+        doc1 = vd.read_json(self.predicate_doc_path)
+        ids1 = ["sample-relation-3", "sample-combined-grammar-2",
+                "sample-grammar-5",
+                "sample-grammar-7",
+                "sample-relation-1",
+                "sample-word-3"]
+        ids2 = ["sample-relation-3", "sample-combined-grammar-2",
+                "sample-grammar-8",
+                "sample-grammar-7",
+                "sample-relation-5",
+                "sample-word-6"]
+        pdb.set_trace()
+        check1 = vd.validate_entity_predicate_content(doc1, ids1)
+        check2 = vd.validate_entity_predicate_content(doc1, ids2)
+        self.assertEqual(True, check1[0])
+        self.assertEqual(False, check2[0])
+
+    def test_validate_link_content(self):
+        ""
+        doc1 = vd.read_json(self.link_doc_path)
+        predicates = ["sample-predicate-2",
+                      "sample-predicate-1"
+                      ]
+        combined1 = ["sample-relation-3"]
+        combined2 = ["sample-relation-5"]
+        check1 = vd.validate_entity_predicate_link_content(doc1,
+                                                           combined1,
+                                                           predicates)
+        check2 = vd.validate_entity_predicate_link_content(doc1,
+                                                           combined2,
+                                                           predicates)
+        self.assertEqual(True, check1[0])
+        self.assertEqual(False, check2[0])
 
 
 if __name__ == "__main__":

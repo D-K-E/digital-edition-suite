@@ -124,15 +124,20 @@ def validate_simple_authority_structure(author_file: dict) -> bool:
     """
     keys = set()
     for author_key, author_value in author_file.items():
+        message = "Key value string object failed: {0}, {1}"
+        message = message.format(author_key, str(author_value))
         if not check_key_key_value_string_object(author_key, author_value):
-            return False, author_key, author_value, assumed_structure
+            return False, author_key, author_value, assumed_structure, message
         value_length = len(author_value)
         if value_length > 1:
-            return False, author_key, author_value, assumed_structure
+            message = "author value must not have more than one key"
+            message += " value pairs"
+            return False, author_key, author_value, assumed_structure, message
         if author_key not in keys:
             keys.add(author_key)
         else:
-            return False, author_key, author_value, assumed_structure
+            message = "Key: " + author_key + " exists in document"
+            return False, author_key, author_value, assumed_structure, message
     return [True]
 
 
@@ -174,18 +179,29 @@ def validate_combined_authority_structure(author_file: dict) -> bool:
     for author_key, author_value in author_file.items():
         value_length = len(author_value)
         if value_length > 2:
-            return False, author_key, author_value, assumed_structure
+            message = "author value must not have more than two keys"
+            message += " value pairs"
+            return False, author_key, author_value, assumed_structure, message
         if author_key not in keys:
             keys.add(author_key)
         else:
-            return False, author_key, author_value, assumed_structure
+            message = "Key: " + author_key + " exists in document"
+            return False, author_key, author_value, assumed_structure, message
         #
         for author_value_key, author_value_value in author_value.items():
-            if not (check_key_value_string(author_value_key,
-                                           author_value_value) or
-                    check_key_key_value_int_object(author_value_key,
-                                                   author_value_value)):
-                return False, author_key, author_value, assumed_structure
+            first_check = check_key_value_string(author_value_key,
+                                                 author_value_value)
+            second_check = check_key_key_value_int_object(author_value_key,
+                                                          author_value_value)
+            if not (first_check or second_check):
+                #
+                message = "Author value items: key: "
+                message += str(author_value_key)
+                message += ", value: " + str(author_value_value)
+                message += "\nValue string check: " + str(first_check)
+                message += "\nValue int object check: " + str(second_check)
+                return (False, author_key,
+                        author_value, assumed_structure, message)
         return [True]
 
 
@@ -233,9 +249,9 @@ def validate_entity_predicate_structure(predicate_file: dict) -> bool:
     return [True]
 
 
-def check_structure_proc(afile: dict, checkfn: lambda x: x, filetype: str):
+def check_structure_proc(checkfn: lambda x: x, filetype: str, params: dict):
     "Check structure for a given file using check function"
-    check = checkfn(afile)
+    check = checkfn(**params)
     if check[0] is False:
         mess = filetype + " file is not valid."
         mess += " Here is the key value pair that is problematic: "
@@ -246,38 +262,38 @@ def check_structure_proc(afile: dict, checkfn: lambda x: x, filetype: str):
 
 def check_simple_authority_structure(author_file: dict) -> None:
     "check simple authority file"
-    check_structure_proc(author_file,
-                         validate_simple_authority_structure,
-                         "Simple Authority")
+    check_structure_proc(params={"author_file": author_file},
+                         checkfn=validate_simple_authority_structure,
+                         filetype="Simple Authority")
 
 
 def check_combined_authority_structure(author_file: dict) -> None:
     "check combined authority file"
-    check_structure_proc(author_file,
-                         validate_combined_authority_structure,
-                         "Combined Authority")
+    check_structure_proc(params={"author_file": author_file},
+                         checkfn=validate_combined_authority_structure,
+                         filetype="Combined Authority")
 
 
 def check_predicate_file_structure(predicate_file: dict) -> None:
     "check predicate file structure"
-    check_structure_proc(predicate_file,
-                         validate_entity_predicate_structure,
-                         "Predicate Document")
+    check_structure_proc(params={"predicate_file": predicate_file},
+                         checkfn=validate_entity_predicate_structure,
+                         filetype="Predicate Document")
 
 
 def check_entity_file_structure(entity_file: dict) -> None:
     "check entity file structure"
-    check_structure_proc(entity_file,
-                         validate_entity_predicate_structure,
-                         "Entity Document")
+    check_structure_proc(params={"predicate_file": entity_file},
+                         checkfn=validate_entity_predicate_structure,
+                         filetype="Entity Document")
 
 
 def check_entity_predicate_link_file_structure(
         entity_predicate_link_file: dict) -> None:
     "check entity predicate link file structure"
-    check_structure_proc(entity_predicate_link_file,
-                         validate_entity_predicate_structure,
-                         "Entity Predicate Link Document")
+    check_structure_proc(params={"predicate_file": entity_predicate_link_file},
+                         checkfn=validate_entity_predicate_structure,
+                         filetype="Entity Predicate Link Document")
 
 
 def validate_combined_authority_content(author_file: dict,
@@ -297,10 +313,12 @@ def validate_combined_authority_content(author_file: dict,
         array_container = get_keys_array_from_object(author_value)
         for key, array_obj in array_container.items():
             if key not in simple_ids:
-                return False, author_key, author_value
+                message = "Key: " + key + " not in id list."
+                return False, author_key, author_value, message
             for value in array_obj.values():
                 if value not in simple_ids:
-                    return False, author_key, author_value
+                    message = "Value: " + value + " not in id list "
+                    return False, author_key, author_value, message
     return [True]
 
 
@@ -325,10 +343,18 @@ def validate_entity_predicate_content(entity_predicate_file: dict,
     for predicate_key, predicate_value in entity_predicate_file.items():
         for key, array_obj in predicate_value.items():
             if key not in simple_combined_ids:
-                return False, predicate_key, predicate_value
+                message = "Key: " + key + " not in id list."
+                return False, predicate_key, predicate_value, message
             for value in array_obj.values():
-                if value not in simple_combined_ids or value not in keys:
-                    return False, predicate_key, predicate_value
+                first_check = value not in simple_combined_ids
+                second_check = value not in keys
+                cond = first_check and second_check
+                if cond:
+                    message = "Value: " + value + ""
+                    message += "\nCondition: " + str(cond)
+                    message += "\nValue not in ids: " + str(first_check)
+                    message += "\nValue not in keys: " + str(second_check)
+                    return False, predicate_key, predicate_value, message
     return [True]
 
 
@@ -339,8 +365,24 @@ def validate_entity_predicate_link_content(link_file: dict,
     for entity_id, link_values in link_file.items():
         for authority_id, predicates in link_values.items():
             if authority_id not in simple_combined_ids:
-                return False, entity_id, link_values
+                message = "Authority id: " + authority_id + " not in id list."
+                return False, entity_id, link_values, message
             for predicate in predicates.values():
                 if predicate not in predicate_ids:
-                    return False, entity_id, link_values
+                    message = "Predicate value: " + predicate
+                    message += " not in available predicate ids"
+                    return False, entity_id, link_values, message
     return [True]
+
+
+def check_content_proc(checkfn: lambda x: x,
+                       filetype: str, params: dict):
+    "Check content for a given file type"
+    check = checkfn(**params)
+    if check[0] is False:
+        mess = filetype + " file is not valid."
+        mess += "\nHere is the key value pair that is problematic: "
+        mess += ",".join([str(check[1]), str(check[2])])
+        mess += ".\nSee also the assumed file structure: " + check[3]
+        mess += "\nSee the message of validation function: " + check[4]
+        raise ValueError(mess)

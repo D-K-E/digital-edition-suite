@@ -8,5 +8,13 @@
         "sample-relation-1": {
             "0": "sample-word-3"
         }
+    },
+    "sample-predicate-2": {
+        "sample-relation-3": {
+            "0": "sample-combined-grammar-2"
+        },
+        "sample-relation-1": {
+            "0": "sample-predicate-1"
+        }
     }
 }
