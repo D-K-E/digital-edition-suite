@@ -5,11 +5,108 @@ Specifications
 Wording in this document conforms to `RFC 2119
 <https://tools.ietf.org/html/rfc2119>`_.
 
+Primitives
+===========
+
+All primitives are immutable.
+
+- :code:`Character`: A character is defined to be that which has a unicode code point value.
+
+- :code:`String`: A string is defined to be a ordered list of characters. 
+
+- :code:`Constant String`: a :code:`String` whose size, number of characters, and elements, characters, can not change once initiated. 
+
+- :code:`Constraint String`: a :code:`Constant String` who satisfies a constraint expressed as boolean condition.
+
+- :code:`Non Numeric String`: a :code:`Constraint String` whose elements do not only consist of characters that can be 
+evaluated as numeric expressions.
+
+Containers
+============ 
+
+All containers are immutable.
+
+- :code:`Pair`: a set with 2 members:
+
+    - a :code:`Constant String`
+    - a :code:`Constant String`
+    
+- :code:`Single Constraint Pair`: a :code:`Pair` whose elements are of :code:`Constraint String` who satisfy the same constraint
+
+- :code:`Double Constraint Pair`: a :code:`Pair` whose elements are of :code:`Constraint String` who satisfy different constraints.
+
+- :code:`Tuple`: a set with n members whose elements are of :code:`Constant String`
+
+- :code:`Single Constraint Tuple`: a :code:`Tuple` whose elements are of :code:`Constraint String` that satisfy the same constraint
+
+- :code:`Single Pair Tuple`: a set with n members whose elements are of :code:`Single Constraint Pair`
+
+- :code:`Double Pair Tuple`: a set with n members whose elements are of :code:`Double Constraint Pair`
+
+
 Format
 ======
 
 This document contains specifications for the files that is used and
 produced in this project.
+
+There are 3 structures used by this suite:
+
+- Simple
+
+- Combined
+
+- Link
+
+Simple
+-------
+
+Components
++++++++++++
+
+Simple must have three components: :code: `id, value, definition`.
+
+- :code:`id`
+
+:code:`definition` is associated to :code:`value`. 
+The cardinality of the association is 1-1. 
+The tuple :code:`value-definition` is associated to :code:`id`.
+The cardinality of the association is 1-1.
+
+Recommendations
+++++++++++++++++
+
+It is recommended to use string as the data type for all the
+components. 
+It is also recommended to use alpha numeric caracters in 
+:code:`id` field, with :code:`,` (:code:`U+002C`, virgule) as
+separator if necessary.
+
+Form
++++++
+
+Simple Structure may have the following form:
+
+.. code:: json
+    
+    {"id": {"value": "definition"}}
+    
+    
+Combined
+---------
+
+Components
+++++++++++++
+
+
+Recommendations
+++++++++++++++++
+
+
+Form
++++++
+
+
 
 There are 4 main types of document that this suite uses:
 
