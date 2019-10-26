@@ -41,11 +41,35 @@ All containers are immutable.
 - :code:`Double Constraint Pair`: a :code:`Pair` whose elements are of
   :code:`Constraint String` who satisfy different constraints.
 
+- :code:`Nested Pair`: a :code:`Pair` whose elements are:
+
+    - :code:`Constant String`
+    - :code:`Pair`
+
+- :code:`Constraint Nested Pair`: a :code:`Pair` whose elements are:
+
+    - :code:`Constraint String`
+    - :code:`Pair`
+
+- :code:`Constraint Nested Single Constraint Pair`: a :code:`Pair` whose
+  elements are:
+
+    - :code:`Constraint String`
+    - :code:`Single Constraint Pair`
+
+- :code:`Constraint Nested Double Constraint Pair`: a :code:`Pair` whose
+  elements are:
+
+    - :code:`Constraint String`
+    - :code:`Double Constraint Pair`
+
 - :code:`Tuple`: a set with n members whose elements are of :code:`Constant
   String`
 
 - :code:`Single Constraint Tuple`: a :code:`Tuple` whose elements are of
   :code:`Constraint String` that satisfy the same constraint
+
+- :code:`Pair Tuple`: a set with n members whose elements are of :code:`Pair`
 
 - :code:`Single Pair Tuple`: a set with n members whose elements are of
   :code:`Single Constraint Pair`
@@ -102,9 +126,9 @@ Simple must have three components: :code: `id, value, definition`.
 The cardinality of the association is 1-1.
 Together their type is :code:`Pair`.
 
-The tuple :code:`value-definition` is associated to :code:`id`.  
+The pair :code:`value-definition` is associated to :code:`id`.  
 The cardinality of the association is 1-1. 
-Together their type is :code:`Mixed Pair`.
+Together their type is :code:`Constraint Nested Pair`.
 
 Recommendations
 ++++++++++++++++
@@ -181,10 +205,11 @@ Link must have three components :code:`id1, id2, ids`:
 
 - :code:`id1`: a :code:`Non Numeric String`
 
-- :code:`id2`: a :code:`Non Numeric String`
+- :code:`id2-ids`: a :code:`Single Constraint Mixed Pair` whose members are:
 
-- :code:`ids`: a :code:`Single Constraint Tuple` whose constraint is
-  :code:`Non Numeric String`
+    - :code:`id2`: a :code:`Non Numeric String`
+    - :code:`ids` a :code:`Single Constraint Tuple` whose constraint is
+      :code:`Non Numeric String`
 
 
 :code:`id2` is associated to :code:`ids`.

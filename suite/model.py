@@ -5,95 +5,126 @@ that are used for documents used by the project
 # author: Kaan Eraslan
 # license: see, LICENSE
 
+from suite.primitive import ConstraintString, NonNumericString
+from suite.container import Pair
+from suite.container import SingleConstraintPair
+from suite.container import DoubleConstraintPair
+from suite.container import NestedPair
+from suite.container import ConstraintNestedPair
+from suite.container import ConstraintNestedSingleConstraintPair
+from suite.container import StringTuple
+from suite.container import SingleConstraintTuple
+from suite.container import PairTuple
+from suite.container import SinglePairTuple
+from suite.container import MixedPair
+from suite.container import SingleConstraintMixedPair
+from suite.container import NonNumericMixedPair
 
-class ConstraintString:
-    "Models spec primitive Constraint String"
 
-    def __init__(self, my_string: str, constraint: lambda x: x):
+class Structure:
+    "Abstract class for all structure"
+
+    def __init__(self):
+        pass
+
+    def isValidComponent(self):
         ""
-        self.cstr = my_string
-        self.fn = constraint
+        raise NotImplementedError
 
     def isValid(self):
-        "Is string valid for given constraint"
-        return self.fn(self.cstr)
-
-
-class NonNumericString(ConstraintString):
-    "Models spec primitive Non Numeric String"
-
-    def __init__(self, my_string: str):
-        def constfn(x: str): return x.isnumeric()
-        super().__init__(my_string, constfn)
-
-
-class Pair:
-    "Models spec container Pair"
-
-    def __init__(self, str1: str, str2: str):
-        self.str1 = str1
-        self.str2 = str2
-
-
-class SingleConstraintPair(Pair):
-    "Models spec container Single Constraint Pair"
-
-    def __init__(self, str1: str, str2: str, constfn: lambda x: x):
-        super().__init__(str1, str2)
-        self.constfn = constfn
-
-    def isValid(self):
-        "Is valid constraint"
-        return self.constfn(self.str1) and self.constfn(self.str2)
-
-
-class DoubleConstraintPair(Pair):
-    "Models spec container Double Constraint Pair"
-
-    def __init__(self, str1: str, str2: str, constfn1: lambda x: x,
-                 constfn2: lambda x: x):
         ""
-        super().__init__(str1, str2)
-        self.constfn1 = constfn1
-        self.constfn2 = constfn2
+        raise NotImplementedError
 
-    def isValid(self):
-        "is valid pair"
-        return self.constfn1(self.str1) and self.constfn2(self.str2)
+    def make(self):
+        ""
+        raise NotImplementedError
 
 
-class SingleConstraintTuple:
-    "Models spec container Single Constraint Tuple"
-
-    def __init__(self, strset: frozenset, constfn: lambda x: x):
-        self.strset = strset
-        self.constfn = constfn
-
-    def isValid(self):
-        return all([self.constfn(el) for el in self.strset])
-
-
-class SingleConstraintMixedPair:
-    "Models spec container Single Constraint Mixed Pair"
-
-    def __init__(self, str1: ConstraintString, strset: SingleConstraintTuple):
-        self.str1 = str1
-        self.strset = strset
-
-    def isValid(self):
-        return self.str1.isValid() and self.strset.isValid()
-
-
-class SimpleStructure:
+class SimpleStructure(Structure):
     "Simple structure"
 
     def __init__(self, idstr: NonNumericString, value: str, definition: str):
+        assert isinstance(idstr, NonNumericString)
+        assert isinstance(value, str)
+        assert isinstance(definition, str)
         self.idstr = idstr
         self.value = value
         self.definition = definition
 
+    def isValidComponent(self):
+        return self.idstr.isValid()
+
     def isValid(self):
-        return (isinstance(self.value, str) and
-                isinstance(self.definition, str) and
-                self.idstr.isValid())
+        nested = self.make()
+        return self.isValidComponent() and nested.isValid()
+
+    def make(self):
+        "make structure"
+        pair = Pair(str1=self.value, str2=self.definition)
+        nested = ConstraintNestedPair(self.idstr, pair)
+        return nested
+
+
+class CombinedStructure(Structure):
+    "Models spec structure Combined"
+
+    def __init__(self, id1: NonNumericString,
+                 value: str, definition: str,
+                 id2: NonNumericString,
+                 values: NonNumericMixedPair):
+        assert isinstance(id1, NonNumericString)
+        self.id1 = id1
+        assert isinstance(value, str)
+        self.value = value
+        assert isinstance(definition, str)
+        self.definition = definition
+        assert isinstance(id2, NonNumericString)
+        self.id2 = id2
+        assert isinstance(values, SingleConstraintTuple)
+        assert all([isinstance(val, NonNumericString) for val in values])
+        self.values = values
+
+    def isValidComponent(self):
+        cond1 = self.id1.isValid()
+        cond2 = self.id2.isValid()
+        cond3 = all([val.isValid() for val in self.values])
+        cond4 = self.values.isValid()
+        return cond1 and cond2 and cond3 and cond4
+
+    def make(self):
+        ""
+        pair = Pair(str1=self.value, str2=self.definition)
+        npair = NonNumericMixedPair(str1=self.id2, strset=self.values)
+        return (self.id1, pair, npair)
+
+    def isValid(self):
+        ""
+        cond1 = self.isValidComponent()
+        tpl = self.make()
+        cond2 = all([t.isValid() for t in tpl])
+        return cond1 and cond2
+
+
+class LinkStructure(Structure):
+    "Models spec structure Link"
+
+    def __init__(self, id1: NonNumericString,
+                 id2_ids: SingleConstraintMixedPair):
+        assert isinstance(id1, NonNumericString)
+        assert isinstance(id2_ids, NonNumericMixedPair)
+        self.id1 = id1
+        self.id2_ids = id2_ids
+
+    def isValidComponent(self):
+        return self.id1.isValid() and self.id2_ids.isValid()
+
+    def make(self):
+        "make an object"
+        return (self.id1, self.id2_ids)
+
+    def isValid(self):
+        cond1 = self.isValidComponent()
+        tpl = self.make()
+        cond2 = all([t.isValid() for t in tpl])
+        return cond1 and cond2
 
