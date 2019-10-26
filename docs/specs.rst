@@ -14,15 +14,19 @@ All primitives are immutable.
 
 - :code:`String`: A string is defined to be a ordered list of characters. 
 
-- :code:`Constant String`: a :code:`String` whose size, number of characters, and elements, characters, can not change once initiated. 
+- :code:`Constant String`: a :code:`String` whose size, number of characters,
+  and elements, characters, can not change once initiated. 
 
-- :code:`Constraint String`: a :code:`Constant String` who satisfies a constraint expressed as boolean condition.
+- :code:`Constraint String`: a :code:`Constant String` who satisfies a
+  constraint expressed as boolean condition.
 
-- :code:`Non Numeric String`: a :code:`Constraint String` whose elements do not only consist of characters that can be 
-evaluated as numeric expressions.
+- :code:`Non Numeric String`: a :code:`Constraint String` whose elements do
+  not only consist of characters that can be evaluated as numeric expressions.
+
 
 Containers
-============ 
+=========== 
+
 
 All containers are immutable.
 
@@ -31,17 +35,41 @@ All containers are immutable.
     - a :code:`Constant String`
     - a :code:`Constant String`
     
-- :code:`Single Constraint Pair`: a :code:`Pair` whose elements are of :code:`Constraint String` who satisfy the same constraint
+- :code:`Single Constraint Pair`: a :code:`Pair` whose elements are of
+  :code:`Constraint String` who satisfy the same constraint
 
-- :code:`Double Constraint Pair`: a :code:`Pair` whose elements are of :code:`Constraint String` who satisfy different constraints.
+- :code:`Double Constraint Pair`: a :code:`Pair` whose elements are of
+  :code:`Constraint String` who satisfy different constraints.
 
-- :code:`Tuple`: a set with n members whose elements are of :code:`Constant String`
+- :code:`Tuple`: a set with n members whose elements are of :code:`Constant
+  String`
 
-- :code:`Single Constraint Tuple`: a :code:`Tuple` whose elements are of :code:`Constraint String` that satisfy the same constraint
+- :code:`Single Constraint Tuple`: a :code:`Tuple` whose elements are of
+  :code:`Constraint String` that satisfy the same constraint
 
-- :code:`Single Pair Tuple`: a set with n members whose elements are of :code:`Single Constraint Pair`
+- :code:`Single Pair Tuple`: a set with n members whose elements are of
+  :code:`Single Constraint Pair`
 
-- :code:`Double Pair Tuple`: a set with n members whose elements are of :code:`Double Constraint Pair`
+- :code:`Double Pair Tuple`: a set with n members whose elements are of
+  :code:`Double Constraint Pair`
+
+- :code:`Mixed Pair`: a set with 2 members who are:
+
+    - a :code:`Constraint String`
+    - a :code:`Tuple`
+
+- :code:`Single Constraint Mixed Pair`: a :code:`Pair` whose members are:
+
+    - a :code:`Constraint String`
+
+    - a :code:`Single Constraint Tuple`
+
+- :code:`Nested Single Constraint Mixed Pair`: a :code:`Pair` whose members
+  are:
+
+    - a :code:`Constraint String`
+
+    - a :code:`Single Constraint Mixed Pair`
 
 
 Format
@@ -66,12 +94,17 @@ Components
 
 Simple must have three components: :code: `id, value, definition`.
 
-- :code:`id`
+- :code:`id`: a :code:`Non Numeric String`
+- :code:`value`: a :code:`Constant String`
+- :code:`definition`: a :code:`Constant String`
 
-:code:`definition` is associated to :code:`value`. 
-The cardinality of the association is 1-1. 
-The tuple :code:`value-definition` is associated to :code:`id`.
+:code:`definition` is associated to :code:`value`.
 The cardinality of the association is 1-1.
+Together their type is :code:`Pair`.
+
+The tuple :code:`value-definition` is associated to :code:`id`.  
+The cardinality of the association is 1-1. 
+Together their type is :code:`Mixed Pair`.
 
 Recommendations
 ++++++++++++++++
@@ -98,6 +131,31 @@ Combined
 Components
 ++++++++++++
 
+Combined must have five components: 
+:code:`id1, value, definition, id2, values`:
+
+- :code:`id1`: a :code:`Non Numeric String`
+- :code:`value`: a :code:`Constant String`
+- :code:`definition`: a :code:`Constant String`
+- :code:`id2`: a :code:`Non Numeric String`
+- :code:`values`: a :code:`Single Constraint Tuple`, whose elements are of
+  :code:`Non Numeric String`
+
+:code:`definition` is associated to :code:`value`.
+The cardinality of the association is 1-1.
+Together their type is :code:`Pair`.
+
+
+:code:`id2` is associated to :code:`values`.
+The cardinality of the association is 1-1.
+Together their type is :code:`Single Constraint Mixed Pair`. The constraint
+that applies to both of the components is :code:`Non Numeric String`
+
+
+:code:`id1` is associated to :code:`id2-values`, and to
+:code:`value-definition`. Both associations are 1-1.
+
+
 
 Recommendations
 ++++++++++++++++
@@ -106,112 +164,92 @@ Recommendations
 Form
 +++++
 
-
-
-There are 4 main types of document that this suite uses:
-
-- Authority document
-
-- Predicate document
-
-- Entity document
-
-- Entity Predicate Relations document
-
-
-Authority document has two sub types, namely: simple, combined.
-
-All documents are in :code:`json` format.
-
-Simple Authority Document has the following structure:
+Combined structure may have the following form
 
 .. code:: json
+    
+    {"id1": {"value": "definition", "id2": ["id3", "id4", "id5"]}}
 
-    {"simple-no-1": {"some-value": "value definition"},
-     "simple-no-n": {"some-value": "value definition"}}
 
-Keys are of type string. Their value is a :code:`json` object, which has a
-single key value pair. Both of them are of string.
+Link
+-----
 
-Combined Authority Document has the following structure:
+Components
+++++++++++++
 
-.. code:: json
+Link must have three components :code:`id1, id2, ids`:
 
-    {
-        "combined-id-n": {"value": "value definition",
-                          "contains": {0: "simple-no-0"}}
-    }
+- :code:`id1`: a :code:`Non Numeric String`
 
-Keys are of type string. Their value is a :code:`json` object, which has a
-double key value pair. First one is a string key with a string associated
-value. Second one is a hard coded relation type :code:`contains`. It can be
-changed to have another relation documented in another Simple Authority
-Document. In any case the reading from left to right should make a sense of
-what is being defined to humans. :code:`combined-id-n` :code:`contains` the
-following id numbers, in its :code:`value`.
+- :code:`id2`: a :code:`Non Numeric String`
 
-The relations are an important part of our specification because they have
-direct impact on the functions that are being employed to modify or render the
-authority and related documents.
+- :code:`ids`: a :code:`Single Constraint Tuple` whose constraint is
+  :code:`Non Numeric String`
 
-Predicate Document has the following structure:
 
-.. code:: json
+:code:`id2` is associated to :code:`ids`.
+The cardinality of the association is 1-1.
+Together their type is :code:`Single Constraint Mixed Pair`. The constraint
+that applies to both of the components is :code:`Non Numeric String`
 
-    {
-        "predicate-no-0": {
-            "simple-id-0": {
-                "0": "combined-id-0",
-                "1": "combined-id-1",
-                "2": "simple-id-0",
-            }
-        },
-        "predicate-no-1": {
-            "combined-id-123": {
-                "0": "combined-id-0",
-                "1": "simple-id-12",
-            },
-            "combined-id-12": {
-                "0": "predicate-id-0",
-                "1": "predicate-id-1",
-            }
-        }
-    }
 
-Basically it is very much like Combined Authority Document, with the
-difference that keys of its associated object are entirely made up of pointers
-to authority document parts. Combined Authority Document can still have a
-value associated to it, whereas a Predicate Document has only pointers.
+:code:`id1` is associated to :code:`id2-ids`.
+The cardinality of the association is 1-n.
 
-Entity Document
+
+Recommendations
+++++++++++++++++
+
+
+Form
++++++
+
+Link structure may have the following form
 
 .. code:: json
+    
+    {"id1": {"id2": ["id3", "id4", "id5"]}}
+ 
 
-    {"entity-1": {"another-simple-id-no-0": {0: "simple-id-no-1"}},
-     "entity-2": {"another-simple-id-no-0": {0: "simple-id-no-2"}} ,
-     "entity-3": {"another-simple-id-no-0": {0: "simple-id-no-3"}} ,
-     "entity-0": {"combined-id-no-1": {"0": "entity-1", 
-                                       "1": "entity-2", 
-                                       "2": "entity-3"}}
-    }
+Content
+========
 
-Very much like a Predicate Document, with the difference that it can point to
-other entities. Predicate Document parts can point to each other and an
-authority document. Entity Document parts can point to other entity document
-parts and Authority Document parts.
+There are 5 content types used by this suite:
 
-Finally the Entity Predicate Relations Document
+- Authority: has Simple or Combined structure
 
-.. code:: json
+- Relation: has Simple structure
 
-    {"entity-1": {"simple-id-0": {"0": "predicate-1", "1": "predicate-2"}}, 
-    "entity-2": {"simple-id-1": {"0": "predicate-2"}}
-    }
+- Predicate: has Link structure
 
-So far the only relations between a Predicate Document part and an Entity
-Document part is that of definition, meaning that we act as if the set of
-predicates define the entity. However the schema is extensible to other
-relations that can be conceived between a set of predicates and an entity.
+- Entity: has Link structure
+
+- Entity Predicate Link: has Link structure
+
+For all documents that have a link structure, their :code:`id2` component must
+be chosen from the :code:`id` component of a Relation document.
+
+
+If Authority document has a Combined structure, its :code:`id2` component must
+be chosen from the :code:`id` component of a Relation document.
+
+Predicate document may contain an :code:`id1` component of another field from
+a Predicate document among its :code:`ids` component, that is predicates can
+refer to other predicates.:code:`ids` component may also contain :code:`id` or
+:code:`id1` component of an Authority document. Predicate document must not
+contain other component content besides the specified options.
+
+
+Entity document may contain an :code:`id1` component of another field from
+a Entity document among its :code:`ids` component, that is entities can
+refer to other entities. :code:`ids` component may also contain :code:`id` or
+:code:`id1` component of an Authority document. Entity document must not
+contain other component content besides the specified options.
+
+
+Entity Predicate Link document must contain :code:`id1` component of a field
+in Entity Document. :code:`ids` must consist of :code:`id1` component of
+fields of a Predicate Document.
 
 
 Recommendations
