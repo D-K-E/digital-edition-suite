@@ -254,7 +254,6 @@ class TestDigitalEditionSuite(unittest.TestCase):
                 "sample-grammar-7",
                 "sample-relation-5",
                 "sample-word-6"]
-        pdb.set_trace()
         check1 = vd.validate_entity_predicate_content(doc1, ids1)
         check2 = vd.validate_entity_predicate_content(doc1, ids2)
         self.assertEqual(True, check1[0])
