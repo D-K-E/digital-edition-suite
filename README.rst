@@ -2,6 +2,9 @@
 digital-edition-suite
 ######################
 
+.. image:: https://travis-ci.com/D-K-E/digital-edition-suite.svg?branch=master
+    :target: https://travis-ci.com/D-K-E/digital-edition-suite
+
 Small scripts to publish digital editions using authority files easier.
 This is intended as small collection of scripts that are not necessarily scalable, 
 but that help to produce machine oriented data during edition projects.
