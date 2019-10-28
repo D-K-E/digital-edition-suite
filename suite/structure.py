@@ -1,16 +1,16 @@
 """
-This module contains models
+This module contains structures
 that are used for documents used by the project
 """
 # author: Kaan Eraslan
 # license: see, LICENSE
 
-from suite.primitive import NonNumericString
-from suite.container import Pair
-from suite.container import NonNumericTuple
-from suite.container import UniformNonNumericMixedPair
+from suite.dtype.primitive import NonNumericString
+from suite.dtype.container import Pair
+from suite.dtype.container import NonNumericTuple
+from suite.dtype.container import UniformNonNumericMixedPair
 
-from suite.container import SingleConstraintTuple
+from suite.dtype.container import SingleConstraintTuple
 
 
 class Structure:

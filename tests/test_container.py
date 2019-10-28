@@ -6,24 +6,24 @@ import unittest
 import os
 import pdb
 
-from suite.container import Pair, SingleConstraintPair
-from suite.container import NestedPair, DoubleConstraintPair
-from suite.container import ConstraintNestedPair
-from suite.container import ConstraintNestedSingleConstraintPair
-from suite.container import StringTuple
-from suite.container import SingleConstraintTuple
-from suite.container import NonNumericTuple
-from suite.container import PairTuple
-from suite.container import SinglePairTuple
-from suite.container import UniformPairTuple
-from suite.container import MixedPair
-from suite.container import SingleConstraintMixedPair
-from suite.container import UniformMixedPair
-from suite.container import NonNumericMixedPair
-from suite.container import UniformNonNumericMixedPair
+from suite.dtype.container import Pair, SingleConstraintPair
+from suite.dtype.container import NestedPair, DoubleConstraintPair
+from suite.dtype.container import ConstraintNestedPair
+from suite.dtype.container import ConstraintNestedSingleConstraintPair
+from suite.dtype.container import StringTuple
+from suite.dtype.container import SingleConstraintTuple
+from suite.dtype.container import NonNumericTuple
+from suite.dtype.container import PairTuple
+from suite.dtype.container import SinglePairTuple
+from suite.dtype.container import UniformPairTuple
+from suite.dtype.container import MixedPair
+from suite.dtype.container import SingleConstraintMixedPair
+from suite.dtype.container import UniformMixedPair
+from suite.dtype.container import NonNumericMixedPair
+from suite.dtype.container import UniformNonNumericMixedPair
 
-from suite.primitive import ConstraintString
-from suite.primitive import NonNumericString
+from suite.dtype.primitive import ConstraintString
+from suite.dtype.primitive import NonNumericString
 
 
 class TestContainer(unittest.TestCase):

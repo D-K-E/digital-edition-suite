@@ -6,7 +6,7 @@ import unittest
 import os
 import pdb
 
-from suite.primitive import ConstraintString, NonNumericString
+from suite.dtype.primitive import ConstraintString, NonNumericString
 
 
 class TestPrimitive(unittest.TestCase):

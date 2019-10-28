@@ -4,7 +4,7 @@ This module contains containers of the suite
 # author: Kaan Eraslan
 # license: see, LICENSE
 
-from suite.primitive import ConstraintString, NonNumericString
+from suite.dtype.primitive import ConstraintString, NonNumericString
 
 
 class BasePair:
