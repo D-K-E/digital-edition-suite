@@ -11,9 +11,9 @@ from suite.container import SingleConstraintTuple
 from suite.container import NonNumericTuple
 from suite.container import UniformNonNumericMixedPair
 
-from suite.model import SimpleStructure
-from suite.model import CombinedStructure
-from suite.model import LinkStructure
+from suite.structure import SimpleStructure
+from suite.structure import CombinedStructure
+from suite.structure import LinkStructure
 
 
 class TestModel(unittest.TestCase):
