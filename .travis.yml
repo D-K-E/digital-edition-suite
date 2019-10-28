@@ -33,5 +33,5 @@ install:
 
 script:
     - python tests/test_container.py
-    - python tests/test_model.py
+    - python tests/test_structure.py
     - python tests/test_primitive.py
