@@ -30,6 +30,8 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --file
     packages-spec.txt
   - source activate test-environment
+  # build package structure
+  - pip install .
 
 script:
     - python tests/test_container.py
