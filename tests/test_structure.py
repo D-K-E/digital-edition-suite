@@ -6,14 +6,14 @@ import unittest
 import os
 import pdb
 
-from suite.primitive import NonNumericString
-from suite.container import SingleConstraintTuple
-from suite.container import NonNumericTuple
-from suite.container import UniformNonNumericMixedPair
+from suite.dtype.primitive import NonNumericString
+from suite.dtype.container import SingleConstraintTuple
+from suite.dtype.container import NonNumericTuple
+from suite.dtype.container import UniformNonNumericMixedPair
 
-from suite.structure import SimpleStructure
-from suite.structure import CombinedStructure
-from suite.structure import LinkStructure
+from suite.dtype.structure import SimpleStructure
+from suite.dtype.structure import CombinedStructure
+from suite.dtype.structure import LinkStructure
 
 
 class TestModel(unittest.TestCase):
