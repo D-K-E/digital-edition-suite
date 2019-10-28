@@ -10,15 +10,16 @@ Primitives
 
 All primitives are immutable.
 
-- :code:`Character`: A character is defined to be that which has a unicode code point value.
+- :code:`Character`: A character is defined to be that which has a unicode
+  code point value.
 
 - :code:`String`: A string is defined to be a ordered list of characters. 
 
 - :code:`Constant String`: a :code:`String` whose size, number of characters,
   and elements, characters, can not change once initiated. 
 
-- :code:`Constraint String`: a :code:`Constant String` who satisfies a
-  constraint expressed as boolean condition.
+- :code:`Constraint String`: a :code:`Constant String` who satisfies a name
+  bound constraint that evaluates to a boolean condition.
 
 - :code:`Non Numeric String`: a :code:`Constraint String` whose elements do
   not only consist of characters that can be evaluated as numeric expressions.
@@ -69,10 +70,16 @@ All containers are immutable.
 - :code:`Single Constraint Tuple`: a :code:`Tuple` whose elements are of
   :code:`Constraint String` that satisfy the same constraint
 
+- :code:`Non Numeric Tuple`: a :code:`Tuple` whose elements are of 
+  :code:`Non Numeric String`
+
 - :code:`Pair Tuple`: a set with n members whose elements are of :code:`Pair`
 
 - :code:`Single Pair Tuple`: a set with n members whose elements are of
   :code:`Single Constraint Pair`
+
+- :code:`Uniform Pair Tuple`: a set with n members whose elements are of
+  :code:`Single Constraint Pair` that satisfy the same constraint
 
 - :code:`Double Pair Tuple`: a set with n members whose elements are of
   :code:`Double Constraint Pair`
@@ -87,6 +94,14 @@ All containers are immutable.
     - a :code:`Constraint String`
 
     - a :code:`Single Constraint Tuple`
+
+- :code:`Uniform Mixed Pair`: a :code:`Pair` whose members are:
+
+    - a :code:`Constraint String`
+
+    - a :code:`Single Constraint Tuple`
+
+    - both satisfy the same condition
 
 - :code:`Nested Single Constraint Mixed Pair`: a :code:`Pair` whose members
   are:
