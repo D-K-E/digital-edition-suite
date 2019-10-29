@@ -16,14 +16,21 @@ class PrimitiveRenderer:
         self.primitive = primitive
 
 
-class PrimitiveHtmlRenderer(PrimitiveRenderer):
-    "Render primitive in html format"
+class PrimitiveXmlRenderer(PrimitiveRenderer):
+    "render primitive in xml format"
 
     def __init__(self, primitive, primitiveType):
         super().__init__(primitive, primitiveType)
 
-    def renderInTag(self, tagname: str):
+    def renderInElement(self, tagname: str):
         raise NotImplementedError
+
+
+class PrimitiveHtmlRenderer(PrimitiveXmlRenderer):
+    "Render primitive in html format"
+
+    def __init__(self, primitive, primitiveType):
+        super().__init__(primitive, primitiveType)
 
     def renderInLink(self):
         return self.renderInTag("a")
@@ -38,19 +45,30 @@ class PrimitiveJsonRenderer(PrimitiveRenderer):
     def __init__(self, primitive, primitiveType):
         super().__init__(primitive, primitiveType)
 
+    def toJSON(self):
+        raise NotImplementedError
+
 
 class ConstraintStringRenderer:
     "Renders a constraint string in given format"
+
     class HtmlRenderer(PrimitiveHtmlRenderer):
         "Render Constraint String as Html"
 
         def __init__(self, cstr: ConstraintString):
             super().__init__(cstr, ConstraintString)
 
-        def renderInTag(self, tagname: str):
+        def renderInElement(self, tagname: str):
             "render constraint string in tag"
             root = etree.Element(tagname)
             root.text = self.primitive.cstr
             root.set("data-class", "constraint-string")
             root.set("data-constraint", self.primitive.fn.__name__)
+            root.set("data-type", "primitive")
             return root
+
+    class JsonRenderer(PrimitiveJsonRenderer):
+        "Render Constraint String as Json"
+
+        def __init__(self, cstr: ConstraintString):
+            super().__init__(cstr, ConstraintString)
