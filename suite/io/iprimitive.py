@@ -1,6 +1,6 @@
 # author: Kaan Eraslan
 # license: see, LICENSE
-# purpose: render primitive in given format
+# purpose: io for primitives in multiple formats
 
 from suite.dtype.primitive import ConstraintString
 from suite.dtype.primitive import NonNumericString
@@ -8,41 +8,21 @@ from suite.dtype.primitive import NonNumericString
 from lxml import etree
 import json
 import yaml
-
-
-class GenericYamlMapping:
-    def __init__(self, params: dict):
-        self.__dict__.update(params)
-
-    @staticmethod
-    def to_yaml(dumper, data):
-        tagname = data.__dict__.pop("tag")
-        style = data.__dict__.pop("style")
-        return dumper.represent_mapping(tagname, data.__dict__)
-
-
-class GenericYamlSequence:
-    def __init__(self, params: dict):
-        self.__dict__.update(params)
-
-    @staticmethod
-    def to_yaml(dumper, data):
-        tagname = data["tag"]
-        values = data["values"]
-        return dumper.represent_sequence(tagname, values)
+import pickle
+import dill
 
 
 class PrimitiveIo:
-    "Base class for all primitive renderers"
+    "Base class for all primitive io"
 
     def __init__(self, primitive, primitiveType, classNameSep="-"):
         assert isinstance(primitive, primitiveType)
         self.primitive = primitive
-        self.cnameSep = classNameSep
+        self.primitiveType = primitiveType
 
 
 class PrimitiveXmlIo(PrimitiveIo):
-    "render primitive in xml format"
+    "io primitive in xml format"
 
     def __init__(self, primitive, primitiveType):
         super().__init__(primitive, primitiveType)
@@ -50,6 +30,7 @@ class PrimitiveXmlIo(PrimitiveIo):
     def to_element(self) -> etree.Element:
         raise NotImplementedError
 
+    @classmethod
     def from_element(self, el: etree.Element):
         raise NotImplementedError
 
@@ -58,46 +39,39 @@ class PrimitiveXmlIo(PrimitiveIo):
 
 
 class PrimitiveJsonIo(PrimitiveIo):
-    "Render Primitive in json format"
+    "Io Primitive in json format"
 
     def __init__(self, primitive, primitiveType):
         super().__init__(primitive, primitiveType)
 
-    def toJSON(self):
+    def to_dict(self):
         raise NotImplementedError
+
+    def to_json(self):
+        objdict = self.to_dict()
+        return json.dumps(objdict, ensure_ascii=False, indent=2, sort_keys=True)
+
+    @classmethod
+    def from_json(self, jsonstr: str):
+        raise NotImplementedError
+
+    def toJSON(self):
+        return self.to_json()
 
     def __str__(self):
         return "Json Renderer for primitive: " + str(self.primitive)
 
 
-class PrimitiveYamlIo(PrimitiveIo):
-    "Render primitive in yaml format"
-    yaml_tag = "!Primitive"
-
-    def __init__(self, primitive, primitiveType):
-        super().__init__(primitive, primitiveType)
-
-    def to_yaml(self):
-        "dump primitive object to yaml"
-        raise NotImplementedError
-
-    def from_yaml(self):
-        "read primitive object from yaml"
-        raise NotImplementedError
-
-    def __str__(self):
-        return "Yaml Renderer for primitive: " + str(self.primitive)
-
-
 class ConstraintStringIo:
     "Io for a constraint string in given format"
-    SUPPORTED = ["xml", "yaml", "json"]
+    SUPPORTED = ["xml", "json"]
 
     def __init__(self, cstr: ConstraintString):
+        assert cstr.isValid()
         self.cstr = cstr
 
     class XmlIo(PrimitiveXmlIo):
-        "Render Constraint String as Xml"
+        "Io Constraint String as Xml"
 
         def __init__(self, cstr: ConstraintString):
             super().__init__(cstr, ConstraintString)
@@ -106,13 +80,26 @@ class ConstraintStringIo:
             "render string in xml element"
             root = etree.Element(tagname)
             root.text = self.primitive.cstr
-            root.set("class", "constraint" + self.cnameSep + "string")
-            root.set("constraint", self.primitive.fn.__name__)
+            root.set("class", self.primitiveType.__name__)
+            myfn = dill.dumps(self.primitive.fn)
+            root.set("constraint", myfn.hex())
             return root
 
-        def renderDefault(self):
+        def to_element(self):
             "render default representation for constraint string"
             return self.renderInElement("primitive")
+
+        @classmethod
+        def from_element(cls, element: etree.Element):
+            ""
+            assert element.get("class") == "ConstraintString"
+            assert element.tag == "primitive"
+            myfn = bytes.fromhex(element.get("constraint"))
+            myfn = dill.loads(myfn)
+            cstr = element.text
+            cstr = ConstraintString(cstr, constraint=myfn)
+            assert cstr.isValid()
+            return cstr
 
     class JsonIo(PrimitiveJsonIo):
         "Render Constraint String as Json"
@@ -120,59 +107,41 @@ class ConstraintStringIo:
         def __init__(self, cstr: ConstraintString):
             super().__init__(cstr, ConstraintString)
 
-        def renderDefault(self):
+        def to_dict(self):
             "Default representation in python dict"
             pdict = {}
-            pdict["class"] = "constraint" + self.cnameSep + "string"
-            pdict["constraint"] = self.primitive.fn.__name__
+            pdict["class"] = self.primitiveType.__name__
+            pdict["constraint"] = dill.dumps(self.primitive.fn).hex()
             pdict["type"] = "primitive"
             pdict["value"] = self.primitive.cstr
             return pdict
 
-        def toJSON(self):
-            "render default representation as json"
-            return json.dumps(
-                self.renderDefault(), indent=2, ensure_ascii=False, sort_keys=True
-            )
+        @classmethod
+        def from_json(cls, jsonstr: str):
+            "construct object from json"
+            objdict = json.loads(jsonstr)
+            assert objdict["class"] == "ConstraintString"
+            assert objdict["type"] == "primitive"
+            myfn = bytes.fromhex(objdict["constraint"])
+            myfn = dill.loads(myfn)
+            cstr = ConstraintString(objdict["value"], myfn)
+            assert cstr.isValid()
+            return cstr
 
-    class YamlIo(PrimitiveYamlIo):
-        "Render Constraint String as Yaml"
-
-        def __init__(self, cstr: ConstraintString):
-            super().__init__(cstr, ConstraintString)
-
-        def renderDefault(self):
-            "Default representation in python dict"
-            pdict = {}
-            pdict["class"] = "constraint" + self.cnameSep + "string"
-            pdict["constraint"] = self.primitive.fn.__name__
-            pdict["value"] = self.primitive.cstr
-            pdict["type"] = self.yaml_tag
-            return pdict
-
-        def to_yaml(self):
-            vdict = self.renderDefault()
-            vdict.pop("type")
-            vdict["tag"] = self.yaml_tag
-            vdict["style"] = None
-            gmap = GenericYamlMapping(vdict)
-            yaml.add_representer(
-                GenericYamlMapping, GenericYamlMapping.to_yaml, Dumper=yaml.SafeDumper
-            )
-            return yaml.safe_dump(gmap, allow_unicode=True)
-
-    def getIo(self, render_format: str):
+    def getIoInstance(self, render_format: str):
         "render constraint string in given format"
+        return self.getIoClass(render_format)(self.cstr)
+
+    @classmethod
+    def getIoClass(cls, render_format: str):
         render_format = render_format.lower()
-        if render_format == self.SUPPORTED[0]:
-            return self.XmlIo(self.cstr)
-        elif render_format == self.SUPPORTED[1]:
-            return self.YamlIo(self.cstr)
-        elif render_format == self.SUPPORTED[2]:
-            return self.JsonIo(self.cstr)
+        if render_format == cls.SUPPORTED[0]:
+            return cls.XmlIo
+        elif render_format == cls.SUPPORTED[1]:
+            return cls.JsonIo
         else:
             raise ValueError(
-                render_format + " not in supported formats: " + ",".join(self.SUPPORTED)
+                render_format + " not in supported formats: " + ",".join(cls.SUPPORTED)
             )
 
     def __str__(self):
@@ -181,13 +150,14 @@ class ConstraintStringIo:
 
 class NonNumericStringIo:
     "Render a non numeric in given format"
-    SUPPORTED = ["xml", "yaml", "json"]
+    SUPPORTED = ["xml", "json"]
 
     def __init__(self, nnstr: NonNumericString):
+        assert nnstr.isValid()
         self.nnstr = nnstr
 
     class XmlIo(PrimitiveXmlIo):
-        "Render Constraint String as Xml"
+        "Io Constraint String as Xml"
 
         def __init__(self, cstr: NonNumericString):
             super().__init__(cstr, NonNumericString)
@@ -196,71 +166,65 @@ class NonNumericStringIo:
             "render string in xml element"
             root = etree.Element(tagname)
             root.text = self.primitive.cstr
-            cname = "non" + self.cnameSep + "numeric" + self.cnameSep + "string"
-            root.set("class", cname)
-            root.set("constraint", self.primitive.fn.__name__)
+            root.set("class", self.primitiveType.__name__)
+            myfn = dill.dumps(self.primitive.fn)
+            root.set("constraint", myfn.hex())
             return root
 
-        def renderDefault(self):
+        def to_element(self):
             "render default representation for constraint string"
             return self.renderInElement("primitive")
 
+        @classmethod
+        def from_element(cls, element: etree.Element):
+            ""
+            assert element.get("class") == "NonNumericString"
+            assert element.tag == "primitive"
+            cstr = element.text
+            nnstr = NonNumericString(cstr)
+            assert nnstr.isValid()
+            return nnstr
+
     class JsonIo(PrimitiveJsonIo):
-        "Render Constraint String as Json"
+        "Io Constraint String as Json"
 
-        def __init__(self, cstr: ConstraintString):
-            super().__init__(cstr, ConstraintString)
+        def __init__(self, cstr: NonNumericString):
+            super().__init__(cstr, NonNumericString)
 
-        def renderDefault(self):
+        def to_dict(self):
             "Default representation in python dict"
             pdict = {}
-            cname = "non" + self.cnameSep + "numeric" + self.cnameSep + "string"
-            pdict["class"] = cname
-            pdict["constraint"] = self.primitive.fn.__name__
+            pdict["class"] = self.primitiveType.__name__
+            pdict["constraint"] = dill.dumps(self.primitive.fn).hex()
             pdict["type"] = "primitive"
             pdict["value"] = self.primitive.cstr
             return pdict
 
-        def toJSON(self):
-            "render default representation as json"
-            return json.dumps(
-                self.renderDefault(), indent=2, ensure_ascii=False, sort_keys=True
-            )
+        @classmethod
+        def from_json(cls, jsonstr: str):
+            "construct object from json"
+            objdict = json.loads(jsonstr)
+            assert objdict["class"] == "NonNumericString"
+            assert objdict["type"] == "primitive"
+            nnstr = NonNumericString(objdict["value"])
+            assert nnstr.isValid()
+            return nnstr
 
-    class YamlIo(PrimitiveYamlIo):
-        "Render Constraint String as Yaml"
-
-        def __init__(self, cstr: ConstraintString):
-            super().__init__(cstr, ConstraintString)
-
-        def renderDefault(self):
-            "Default representation in python dict"
-            pdict = {}
-            cname = "non" + self.cnameSep + "numeric" + self.cnameSep + "string"
-            pdict["class"] = cname
-            pdict["constraint"] = self.primitive.fn.__name__
-            pdict["value"] = self.primitive.cstr
-            pdict["type"] = self.yaml_tag
-            return pdict
-
-        def __repr__(self):
-            "reproduce yaml"
-            pdict = self.renderDefault()
-            mess = "(class={0}, constraint={1}, value={2})".format(
-                pdict["class"], pdict["constraint"], pdict["value"]
-            )
-            return mess
-
-    def getIo(self, render_format: str):
+    def getIoInstance(self, render_format: str):
         "render constraint string in given format"
+        return self.getIoClass(render_format)(self.nnstr)
+
+    @classmethod
+    def getIoClass(cls, render_format: str):
         render_format = render_format.lower()
-        if render_format == self.SUPPORTED[0]:
-            return self.XmlIo(self.nnstr)
-        elif render_format == self.SUPPORTED[1]:
-            return self.YamlIo(self.nnstr)
-        elif render_format == self.SUPPORTED[2]:
-            return self.JsonIo(self.nnstr)
+        if render_format == cls.SUPPORTED[0]:
+            return cls.XmlIo
+        elif render_format == cls.SUPPORTED[1]:
+            return cls.JsonIo
         else:
             raise ValueError(
-                render_format + " not in supported formats: " + ",".join(self.SUPPORTED)
+                render_format + " not in supported formats: " + ",".join(cls.SUPPORTED)
             )
+
+    def __str__(self):
+        return "Renderer builder for constraint string: " + str(self.cstr)

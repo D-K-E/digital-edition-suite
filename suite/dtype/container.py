@@ -70,8 +70,7 @@ class Pair(BasePair):
 class SingleConstraintPair(BasePair):
     "Models spec container Single Constraint Pair"
 
-    def __init__(self, str1: ConstraintString,
-                 str2: ConstraintString):
+    def __init__(self, str1: ConstraintString, str2: ConstraintString):
         super().__init__(str1, str2, ConstraintString, ConstraintString)
         myfn = str1.fn
         mess = "anonymous functions are not allowed as constraints"
@@ -94,8 +93,7 @@ class SingleConstraintPair(BasePair):
 class DoubleConstraintPair(BasePair):
     "Models spec container Double Constraint Pair"
 
-    def __init__(self, str1: ConstraintString,
-                 str2: ConstraintString):
+    def __init__(self, str1: ConstraintString, str2: ConstraintString):
         ""
         super().__init__(str1, str2, ConstraintString, ConstraintString)
         myfn1 = str1.fn
@@ -141,10 +139,8 @@ class NestedPair(BasePair):
 class ConstraintNestedPair(BasePair):
     "Models spec container Constraint Nested Pair"
 
-    def __init__(self, str1: ConstraintString,
-                 npair: Pair):
-        super().__init__(str1, npair,
-                         ConstraintString, Pair)
+    def __init__(self, str1: ConstraintString, npair: Pair):
+        super().__init__(str1, npair, ConstraintString, Pair)
 
     def __eq__(self, other):
         if isinstance(other, ConstraintNestedPair):
@@ -160,11 +156,8 @@ class ConstraintNestedPair(BasePair):
 class ConstraintNestedSingleConstraintPair(BasePair):
     "Models spec container Constraint Nested Single Constraint Pair"
 
-    def __init__(self, str1: ConstraintString,
-                 npair: SingleConstraintPair):
-        super().__init__(str1, npair,
-                         ConstraintString,
-                         SingleConstraintPair)
+    def __init__(self, str1: ConstraintString, npair: SingleConstraintPair):
+        super().__init__(str1, npair, ConstraintString, SingleConstraintPair)
 
     def __eq__(self, other):
         if isinstance(other, ConstraintNestedSingleConstraintPair):
@@ -235,12 +228,8 @@ class StringTuple(BaseTuple):
 class SingleConstraintTuple(BaseTuple):
     "Models spec container Single Constraint Tuple"
 
-    def __init__(self,
-                 strset: frozenset
-                 ):
-        super().__init__(strset,
-                         frozenset,
-                         ConstraintString)
+    def __init__(self, strset: frozenset):
+        super().__init__(strset, frozenset, ConstraintString)
         fncs = set([s.fn.__name__ for s in strset])
         assert len(fncs) == 1
         fncs = list(fncs)
@@ -262,9 +251,7 @@ class NonNumericTuple(BaseTuple):
     "Derives Single Constraint Tuple"
 
     def __init__(self, strset: frozenset):
-        super().__init__(strset,
-                         frozenset,
-                         NonNumericString)
+        super().__init__(strset, frozenset, NonNumericString)
         fncs = set([s.fn.__name__ for s in strset])
         assert len(fncs) == 1
         fncs = list(fncs)
@@ -303,8 +290,7 @@ class SinglePairTuple(BaseTuple):
     "Models Single Pair Tuple container from spec"
 
     def __init__(self, pairset: frozenset):
-        super().__init__(pairset, frozenset,
-                         SingleConstraintPair)
+        super().__init__(pairset, frozenset, SingleConstraintPair)
 
     def __eq__(self, other):
         if isinstance(other, SinglePairTuple):
@@ -321,8 +307,7 @@ class UniformPairTuple(BaseTuple):
     "Models Uniform Pair Tuple container from spec"
 
     def __init__(self, pairset: frozenset):
-        super().__init__(pairset, frozenset,
-                         SingleConstraintPair)
+        super().__init__(pairset, frozenset, SingleConstraintPair)
         fncs = set([p.arg1.fn.__name__ for p in pairset])
         assert len(fncs) == 1
         fncs = list(fncs)
@@ -344,9 +329,7 @@ class MixedPair(BasePair):
     "Models Mixed Pair container from spec"
 
     def __init__(self, str1: ConstraintString, tpl: StringTuple):
-        super().__init__(str1, tpl,
-                         ConstraintString,
-                         StringTuple)
+        super().__init__(str1, tpl, ConstraintString, StringTuple)
 
     def __eq__(self, other):
         if isinstance(other, MixedPair):
@@ -362,11 +345,8 @@ class MixedPair(BasePair):
 class SingleConstraintMixedPair(BasePair):
     "Models spec container Single Constraint Mixed Pair"
 
-    def __init__(self, str1: ConstraintString,
-                 strset: SingleConstraintTuple):
-        super().__init__(str1, strset,
-                         ConstraintString,
-                         SingleConstraintTuple)
+    def __init__(self, str1: ConstraintString, strset: SingleConstraintTuple):
+        super().__init__(str1, strset, ConstraintString, SingleConstraintTuple)
 
     def __eq__(self, other):
         if isinstance(other, SingleConstraintMixedPair):
@@ -382,11 +362,8 @@ class SingleConstraintMixedPair(BasePair):
 class UniformMixedPair(BasePair):
     "Models spec container Uniform Mixed Pair"
 
-    def __init__(self, str1: ConstraintString,
-                 strset: SingleConstraintTuple):
-        super().__init__(str1, strset,
-                         ConstraintString,
-                         SingleConstraintTuple)
+    def __init__(self, str1: ConstraintString, strset: SingleConstraintTuple):
+        super().__init__(str1, strset, ConstraintString, SingleConstraintTuple)
         fncs = set([p.fn.__name__ for p in strset])
         fncs.add(str1.fn.__name__)
         assert len(fncs) == 1
@@ -408,11 +385,8 @@ class UniformMixedPair(BasePair):
 class NonNumericMixedPair(BasePair):
     "Derives spec container Single Constraint Mixed Pair"
 
-    def __init__(self, str1: NonNumericString,
-                 strset: SingleConstraintTuple):
-        super().__init__(str1, strset,
-                         NonNumericString,
-                         SingleConstraintTuple)
+    def __init__(self, str1: NonNumericString, strset: SingleConstraintTuple):
+        super().__init__(str1, strset, NonNumericString, SingleConstraintTuple)
 
     def __eq__(self, other):
         if isinstance(other, NonNumericMixedPair):
@@ -428,11 +402,8 @@ class NonNumericMixedPair(BasePair):
 class UniformNonNumericMixedPair(BasePair):
     "Derives spec container Uniform Mixed Pair"
 
-    def __init__(self, str1: NonNumericString,
-                 strset: NonNumericTuple):
-        super().__init__(str1, strset,
-                         NonNumericString,
-                         NonNumericTuple)
+    def __init__(self, str1: NonNumericString, strset: NonNumericTuple):
+        super().__init__(str1, strset, NonNumericString, NonNumericTuple)
         fncs = set([p.fn.__name__ for p in strset])
         fncs.add(str1.fn.__name__)
         assert len(fncs) == 1

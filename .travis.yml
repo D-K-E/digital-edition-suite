@@ -37,3 +37,5 @@ script:
     - python tests/test_container.py
     - python tests/test_structure.py
     - python tests/test_primitive.py
+    - python tests/test_io_primitive.py
+    - python tests/test_io_container.py
