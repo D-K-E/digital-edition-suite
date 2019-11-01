@@ -26,12 +26,26 @@ Here are the steps:
 1. You define a relations file, and associate function representation (binary
    or string) with each relation.
 
-2. You start writing your entities document, this should almost never be
-   directly created. It should be mostly a product of machine through a markup
-   language either html or a templating language.
+2. You start to write your document in html or in some templating language.
+   
 
-3. Upon launching the programme you should only write down entities. 
+3. Label your entities. For easy generation of authority documents label unit
+   entities first. Then generate a simple authority file from them. This would
+   come in handy afterwards.
 
+4. Before going on further, you should create all the authority files
+   necessary for creating a predicate document. Once all of those are created,
+   you can start creating predicates that are going to be associated with
+   entities.
+
+5. For each entity there must be a unique predicate for a given relation. At
+   this point you should see whether there are any entities that can not be
+   associated with any of predicates.
+
+6. Link predicate inside a predicate document with an entity.
+
+7. Use either the corresponding command line or graphical interface for
+   handling all the document types mentioned above.
 
 Already Existing Project
 --------------------------
