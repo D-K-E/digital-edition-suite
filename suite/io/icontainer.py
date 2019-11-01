@@ -4,6 +4,7 @@
 
 from suite.dtype.primitive import ConstraintString
 from suite.dtype.primitive import NonNumericString
+from suite.dtype.primitive import ConstantString
 
 from suite.dtype.container import BasePair, BaseTuple
 from suite.dtype.container import Pair, SingleConstraintPair
@@ -54,6 +55,9 @@ class ContainerXmlIo(ContainerIo):
     def __init__(self, container, containerType):
         super().__init__(container, containerType)
 
+    def member_to_element(self, member) -> etree.Element:
+        raise NotImplementedError
+
     def to_element(self):
         raise NotImplementedError
 
@@ -69,6 +73,9 @@ class ContainerJsonIo(ContainerIo):
         super().__init__(container, containerType)
 
     def to_dict(self):
+        raise NotImplementedError
+
+    def member_to_dict(self, member) -> dict:
         raise NotImplementedError
 
     def to_json(self):
@@ -128,6 +135,10 @@ class PairIo(ContainerIoBuilder):
 
         def __init__(self, pair):
             super().__init__(pair, Pair)
+
+        def member_to_element(self, member):
+            "transform member to element"
+            el = etree.Element("primitive")
 
         def to_element(self):
             "transform pair to xml"
@@ -211,6 +222,102 @@ class SingleConstraintPairIo(ContainerIoBuilder):
 
         def __init__(self, pair):
             super().__init__(pair, SingleConstraintPair)
+
+        def member_to_element(self, member):
+            ""
+            cstr = member
+            cstrio = ConstraintStringIo(cstr)
+            ioinst = cstrio.getIoInstance("xml")
+            el = ioinst.to_element()
+            return el
+
+        def to_element(self):
+            "transform pair to xml"
+            el = etree.Element("pair")
+            el.set("class", self.containerType.__name__)
+            myfn = dill.dumps(self.container.constfn)
+            el.set("constraint", myfn.hex())
+            members = etree.Element("members")
+            el1 = self.member_to_element(self.container.arg1)
+            el2 = self.member_to_element(self.container.arg2)
+            members.append(el1)
+            members.append(el2)
+            el.append(members)
+            return el
+
+        @classmethod
+        def from_element(cls, el: etree.Element):
+            "Obtain pair from element"
+            assert el.tag == "pair"
+            assert el.get("class") == "SingleConstraintPair"
+            members = el[0]
+            iocls1 = ConstraintStringIo.getIoClass("xml")
+            arg1 = iocls1.from_element(members[0])
+            arg2 = iocls1.from_element(members[1])
+            pair = SingleConstraintPair(arg1, arg2)
+            assert pair.isValid()
+            return pair
+
+    class JsonIo(ContainerJsonIo):
+        "pair json io"
+
+        def __init__(self, pair):
+            super().__init__(pair, SingleConstraintPair)
+
+        def member_to_dict(self, member) -> dict:
+            ""
+            cstr = member
+            cstrio = ConstraintStringIo(cstr)
+            ioinst = cstrio.getIoInstance("json")
+            return ioinst.to_dict()
+
+        def to_dict(self):
+            "to dict pair"
+            str1 = self.container.arg1
+            str2 = self.container.arg2
+            pdict = {}
+            pdict["class"] = self.containerType.__name__
+            pdict["type"] = "pair"
+            myfn = dill.dumps(self.container.constfn)
+            pdict["constraint"] = myfn.hex()
+            member1 = self.member_to_dict(self.container.arg1)
+            member2 = self.member_to_dict(self.container.arg2)
+            pdict["members"] = [member1, member2]
+            return pdict
+
+        @classmethod
+        def from_json(self, jsonstr: str):
+            "obtain pair from json object"
+            objdict = json.loads(jsonstr)
+            assert objdict["type"] == "pair"
+            assert objdict["class"] == "SingleConstraintPair"
+            members = objdict["members"]
+            member1 = members[0]
+            member2 = members[1]
+            iocls = ConstraintStringIo.getIoClass("json")
+            cstr1 = iocls.from_json(json.dumps(member1))
+            cstr2 = iocls.from_json(json.dumps(member2))
+            pair = SingleConstraintPair(cstr1, cstr2)
+            assert pair.isValid()
+            return pair
+
+    def getIoInstance(self, render_format: str):
+        "io for pair given format"
+        return self.getIoClass(render_format)(self.pair)
+
+
+class DoubleConstraintPairIo(ContainerIoBuilder):
+    "Double Constraint Pair io"
+
+    def __init__(self, pair: DoubleConstraintPair):
+        assert pair.isValid()
+        self.pair = pair
+
+    class XmlIo(ContainerXmlIo):
+        "constraint double constraint xml io"
+
+        def __init__(self, pair):
+            super().__init__(pair, DoubleConstraintPair)
 
         def arg2element(self, isFirst=True):
             ""
@@ -299,4 +406,3 @@ class SingleConstraintPairIo(ContainerIoBuilder):
     def getIoInstance(self, render_format: str):
         "io for pair given format"
         return self.getIoClass(render_format)(self.pair)
-

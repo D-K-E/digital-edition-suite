@@ -3,7 +3,9 @@
 # purpose: io for primitives in multiple formats
 
 from suite.dtype.primitive import ConstraintString
+from suite.dtype.primitive import ConstantString
 from suite.dtype.primitive import NonNumericString
+from suite.dtype.primitive import PrimitiveMaker
 
 from lxml import etree
 import json
@@ -62,7 +64,96 @@ class PrimitiveJsonIo(PrimitiveIo):
         return "Json Renderer for primitive: " + str(self.primitive)
 
 
-class ConstraintStringIo:
+class PrimitiveIoBuilder:
+    "Base Io builder for available primitive io objects"
+    SUPPORTED = ["xml", "json"]
+    maker = PrimitiveMaker()
+
+    class XmlIo:
+        pass
+
+    class JsonIo:
+        pass
+
+    @classmethod
+    def getIoClass(cls, render_format: str):
+        render_format = render_format.lower()
+        if render_format == cls.SUPPORTED[0]:
+            return cls.XmlIo
+        elif render_format == cls.SUPPORTED[1]:
+            return cls.JsonIo
+        else:
+            raise ValueError(
+                render_format + " not in supported formats: " + ",".join(cls.SUPPORTED)
+            )
+
+
+class ConstantStringIo(PrimitiveIoBuilder):
+    "Io builder for constant string primitive"
+
+    def __init__(self, mystr: ConstantString):
+        super().__init__()
+        assert mystr.isValid()
+        self.constr = mystr
+
+    class XmlIo(PrimitiveXmlIo):
+        def __init__(self, mystr: ConstantString):
+            super().__init__(mystr, ConstantString)
+
+        def to_element(self) -> etree.Element:
+            "io default representation for constant string"
+            root = etree.Element("primitive")
+            root.text = str(self.primitive)
+            root.set("class", self.primitiveType.__name__)
+            return root
+
+        @classmethod
+        def from_element(cls, el: etree.Element) -> ConstantString:
+            "from element"
+            assert el.get("class") == "ConstantString"
+            elstr = el.text
+            constr = PrimitiveIoBuilder.maker.make(
+                choice="constant string", mystr=elstr
+            )
+            return constr
+
+    class JsonIo(PrimitiveJsonIo):
+        def __init__(self, mystr: ConstantString):
+            super().__init__(mystr, ConstantString)
+
+        def to_dict(self):
+            "render as a dict"
+            pdict = {}
+            pdict["class"] = self.primitiveType.__name__
+            pdict["type"] = "primitive"
+            pdict["value"] = str(self.primitive)
+            return pdict
+
+        @classmethod
+        def from_dict(cls, cdict: dict) -> ConstantString:
+            "render constant string from dict"
+            assert cdict["class"] == "ConstantString"
+            assert cdict["type"] == "primitive"
+            constr = PrimitiveIoBuilder.maker.make(
+                choice="constant string", mystr=cdict["value"]
+            )
+            return constr
+
+        @classmethod
+        def from_json(cls, jsonstr: str) -> ConstantString:
+            "obtain from constant string"
+            obdict = json.loads(jsonstr)
+            return cls.from_dict(obdict)
+
+    def getIoInstance(self, render_format: str):
+        "render constraint string in given format"
+        return self.getIoClass(render_format)(self.constr)
+
+    def __repr__(self):
+        return "Io builder for: " + repr(self.constr)
+
+
+class ConstraintStringIo(PrimitiveIoBuilder):
     "Io for a constraint string in given format"
     SUPPORTED = ["xml", "json"]
 
@@ -76,18 +167,19 @@ class ConstraintStringIo:
         def __init__(self, cstr: ConstraintString):
             super().__init__(cstr, ConstraintString)
 
-        def renderInElement(self, tagname: str):
-            "render string in xml element"
-            root = etree.Element(tagname)
-            root.text = self.primitive.cstr
+        @staticmethod
+        def text_to_constant_string(text: str) -> ConstantString:
+            "transform string to constant string"
+            return PrimitiveIoBuilder.maker.make(choice="constant string", mystr=text)
+
+        def to_element(self):
+            "render default representation for constraint string"
+            root = etree.Element("primitive")
+            root.text = str(self.primitive)
             root.set("class", self.primitiveType.__name__)
             myfn = dill.dumps(self.primitive.fn)
             root.set("constraint", myfn.hex())
             return root
-
-        def to_element(self):
-            "render default representation for constraint string"
-            return self.renderInElement("primitive")
 
         @classmethod
         def from_element(cls, element: etree.Element):
@@ -97,9 +189,10 @@ class ConstraintStringIo:
             myfn = bytes.fromhex(element.get("constraint"))
             myfn = dill.loads(myfn)
             cstr = element.text
-            cstr = ConstraintString(cstr, constraint=myfn)
-            assert cstr.isValid()
-            return cstr
+            constr = cls.text_to_constant_string(cstr)
+            return PrimitiveIoBuilder.maker.make(
+                choice="constraint string", mystr=constr, fnc=myfn
+            )
 
     class JsonIo(PrimitiveJsonIo):
         "Render Constraint String as Json"
@@ -107,48 +200,60 @@ class ConstraintStringIo:
         def __init__(self, cstr: ConstraintString):
             super().__init__(cstr, ConstraintString)
 
+        @classmethod
+        def constant_string_to_dict(cls, constring: ConstraintString):
+            "transform constant string to dict"
+            constr = constring.cstr
+            consio = ConstantStringIo(constr)
+            ionst = consio.getIoInstance("json")
+            jstr = ionst.to_json()
+            return json.loads(jstr)
+
         def to_dict(self):
             "Default representation in python dict"
             pdict = {}
             pdict["class"] = self.primitiveType.__name__
             pdict["constraint"] = dill.dumps(self.primitive.fn).hex()
             pdict["type"] = "primitive"
-            pdict["value"] = self.primitive.cstr
+            pdict["value"] = self.constant_string_to_dict(self.primitive)
             return pdict
+
+        @classmethod
+        def dict_to_constant_string(cls, consdict: dict):
+            "transform dict representation to constant string"
+            consio = ConstantStringIo
+            iocls = consio.getIoClass("json")
+            constr = iocls.from_dict(consdict)
+            return constr
+
+        @classmethod
+        def from_dict(cls, cdict: dict) -> ConstraintString:
+            "transform dict to ConstraintString"
+            assert cdict["class"] == "ConstraintString"
+            assert cdict["type"] == "primitive"
+            myfn = bytes.fromhex(cdict["constraint"])
+            myfnc = dill.loads(myfn)
+            constrdict = cdict["value"]
+            constr = cls.dict_to_constant_string(constrdict)
+            return PrimitiveIoBuilder.maker.make(
+                choice="constraint string", mystr=constr, fnc=myfnc
+            )
 
         @classmethod
         def from_json(cls, jsonstr: str):
             "construct object from json"
             objdict = json.loads(jsonstr)
-            assert objdict["class"] == "ConstraintString"
-            assert objdict["type"] == "primitive"
-            myfn = bytes.fromhex(objdict["constraint"])
-            myfn = dill.loads(myfn)
-            cstr = ConstraintString(objdict["value"], myfn)
-            assert cstr.isValid()
-            return cstr
+            return cls.from_dict(objdict)
 
     def getIoInstance(self, render_format: str):
         "render constraint string in given format"
         return self.getIoClass(render_format)(self.cstr)
 
-    @classmethod
-    def getIoClass(cls, render_format: str):
-        render_format = render_format.lower()
-        if render_format == cls.SUPPORTED[0]:
-            return cls.XmlIo
-        elif render_format == cls.SUPPORTED[1]:
-            return cls.JsonIo
-        else:
-            raise ValueError(
-                render_format + " not in supported formats: " + ",".join(cls.SUPPORTED)
-            )
-
-    def __str__(self):
-        return "Renderer builder for constraint string: " + str(self.cstr)
+    def __repr__(self):
+        return "Io builder for: " + repr(self.cstr)
 
 
-class NonNumericStringIo:
+class NonNumericStringIo(PrimitiveIoBuilder):
     "Render a non numeric in given format"
     SUPPORTED = ["xml", "json"]
 
@@ -162,18 +267,19 @@ class NonNumericStringIo:
         def __init__(self, cstr: NonNumericString):
             super().__init__(cstr, NonNumericString)
 
-        def renderInElement(self, tagname: str):
-            "render string in xml element"
-            root = etree.Element(tagname)
-            root.text = self.primitive.cstr
+        @staticmethod
+        def text_to_constant_string(text: str) -> ConstantString:
+            "transform string to constant string"
+            return PrimitiveIoBuilder.maker.make(choice="constant string", mystr=text)
+
+        def to_element(self):
+            "render default representation for constraint string"
+            root = etree.Element("primitive")
+            root.text = str(self.primitive)
             root.set("class", self.primitiveType.__name__)
             myfn = dill.dumps(self.primitive.fn)
             root.set("constraint", myfn.hex())
             return root
-
-        def to_element(self):
-            "render default representation for constraint string"
-            return self.renderInElement("primitive")
 
         @classmethod
         def from_element(cls, element: etree.Element):
@@ -181,9 +287,10 @@ class NonNumericStringIo:
             assert element.get("class") == "NonNumericString"
             assert element.tag == "primitive"
             cstr = element.text
-            nnstr = NonNumericString(cstr)
-            assert nnstr.isValid()
-            return nnstr
+            constr = cls.text_to_constant_string(cstr)
+            return PrimitiveIoBuilder.maker.make(
+                choice="non numeric string", mystr=constr
+            )
 
     class JsonIo(PrimitiveJsonIo):
         "Io Constraint String as Json"
@@ -191,14 +298,32 @@ class NonNumericStringIo:
         def __init__(self, cstr: NonNumericString):
             super().__init__(cstr, NonNumericString)
 
+        @classmethod
+        def constant_string_to_dict(cls, conststr: NonNumericString):
+            "transform constant string of a constraint string to dict"
+            constr = conststr.cstr
+            consio = ConstantStringIo(constr)
+            ionst = consio.getIoInstance("json")
+            jstr = ionst.to_json()
+            return json.loads(jstr)
+
         def to_dict(self):
             "Default representation in python dict"
             pdict = {}
             pdict["class"] = self.primitiveType.__name__
             pdict["constraint"] = dill.dumps(self.primitive.fn).hex()
             pdict["type"] = "primitive"
-            pdict["value"] = self.primitive.cstr
+            pdict["value"] = self.constant_string_to_dict(self.primitive)
             return pdict
+
+        @classmethod
+        def dict_to_constant_string(cls, consdict: dict):
+            "transform dict representation to constant string"
+            consio = ConstantStringIo
+            iocls = consio.getIoClass("json")
+            constr = iocls.from_dict(consdict)
+            assert constr.isValid()
+            return constr
 
         @classmethod
         def from_json(cls, jsonstr: str):
@@ -206,25 +331,14 @@ class NonNumericStringIo:
             objdict = json.loads(jsonstr)
             assert objdict["class"] == "NonNumericString"
             assert objdict["type"] == "primitive"
-            nnstr = NonNumericString(objdict["value"])
-            assert nnstr.isValid()
-            return nnstr
+            constr = cls.dict_to_constant_string(objdict["value"])
+            return PrimitiveIoBuilder.maker.make(
+                choice="non numeric string", mystr=constr
+            )
 
     def getIoInstance(self, render_format: str):
         "render constraint string in given format"
         return self.getIoClass(render_format)(self.nnstr)
 
-    @classmethod
-    def getIoClass(cls, render_format: str):
-        render_format = render_format.lower()
-        if render_format == cls.SUPPORTED[0]:
-            return cls.XmlIo
-        elif render_format == cls.SUPPORTED[1]:
-            return cls.JsonIo
-        else:
-            raise ValueError(
-                render_format + " not in supported formats: " + ",".join(cls.SUPPORTED)
-            )
-
-    def __str__(self):
-        return "Renderer builder for constraint string: " + str(self.cstr)
+    def __repr__(self):
+        return "Io builder for " + repr(self.cstr)
