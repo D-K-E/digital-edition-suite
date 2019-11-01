@@ -253,16 +253,6 @@ class SingleConstraintTuple(BaseTuple, SingleConstraintTupleBase):
         return hash(tuple(items))
 
 
-def non_numeric_tuple_init_check_proc(tpl):
-    assert isinstance(tpl, frozenset)
-    assert all([isinstance(e, NonNumericString) for e in tpl])
-    fncs = set([s.fn.__name__ for s in tpl])
-    assert len(fncs) == 1
-    fncs = list(fncs)
-    fnc = fncs[0]
-    assert fnc != "<lambda>"
-
-
 class NonNumericTupleBase(NamedTuple):
     elements: frozenset
 
@@ -279,11 +269,6 @@ class NonNumericTuple(BaseTuple, NonNumericTupleBase):
         items = list(self.__dict__.items())
         items.sort()
         return hash(tuple(items))
-
-
-def pair_tuple_init_check_proc(tpl):
-    assert isinstance(tpl, frozenset)
-    assert all([isinstance(e, Pair) for e in tpl])
 
 
 class PairTupleBase(NamedTuple):
@@ -325,16 +310,6 @@ class SinglePairTuple(BaseTuple, SinglePairTupleBase):
         items = list(self.__dict__.items())
         items.sort()
         return hash(tuple(items))
-
-
-def uniform_pair_tuple_init_check_proc(tpl):
-    assert isinstance(tpl, frozenset)
-    assert all([isinstance(e, SingleConstraintPair) for e in tpl])
-    fncs = set([p.arg1.fn.__name__ for p in tpl])
-    assert len(fncs) == 1
-    fncs = list(fncs)
-    fnc = fncs[0]
-    assert fnc != "<lambda>"
 
 
 class UniformPairTupleBase(NamedTuple):
@@ -536,19 +511,52 @@ class ContainerMaker:
         )
 
     @staticmethod
-    def string_tuple_init_check_proc(tpl):
-        assert isinstance(tpl, frozenset)
-        assert all([isinstance(e, ConstantString) for e in tpl])
+    def tuple_init_check_proc(els, elsType, elType):
+        assert isinstance(els, elsType)
+        assert all([isinstance(e, elType) for e in els])
 
     @staticmethod
-    def single_constraint_tuple_init_check_proc(tpl):
-        assert isinstance(tpl, frozenset)
-        assert all([isinstance(e, ConstraintString) for e in tpl])
-        fncs = set([s.fn.__name__ for s in tpl])
+    def string_tuple_init_check_proc(els):
+        ContainerMaker.tuple_init_check_proc(els, frozenset, ConstantString)
+
+    @staticmethod
+    def single_constraint_tuple_init_check_proc(els):
+        ContainerMaker.tuple_init_check_proc(els, frozenset, ConstraintString)
+        fncs = set([s.fn.__name__ for s in els])
         assert len(fncs) == 1
         fncs = list(fncs)
         fnc = fncs[0]
         assert fnc != "<lambda>"
+
+    @staticmethod
+    def non_numeric_tuple_init_check_proc(els):
+        ContainerMaker.tuple_init_check_proc(els, frozenset, NonNumericString)
+        fncs = set([s.fn.__name__ for s in els])
+        assert len(fncs) == 1
+        fncs = list(fncs)
+        fnc = fncs[0]
+        assert fnc != "<lambda>"
+
+    @staticmethod
+    def pair_tuple_init_check_proc(els):
+        ContainerMaker.tuple_init_check_proc(els, frozenset, Pair)
+
+    @staticmethod
+    def single_pair_tuple_init_check_proc(els):
+        ContainerMaker.tuple_init_check_proc(els, frozenset, SingleConstraintPair)
+
+    @staticmethod
+    def uniform_pair_tuple_init_check_proc(els):
+        ContainerMaker.tuple_init_check_proc(els, frozenset, SingleConstraintPair)
+        fncs = set([p.arg1.fn.__name__ for p in els])
+        assert len(fncs) == 1
+        fncs = list(fncs)
+        fnc = fncs[0]
+        assert fnc != "<lambda>"
+
+    @staticmethod
+    def mixed_pair_init_check_proc(arg1, arg2):
+        ContainerMaker.pair_init_check_proc(arg1, arg2, ConstraintString, StringTuple)
 
     @staticmethod
     def make_pair(arg1, arg2):
