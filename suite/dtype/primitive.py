@@ -57,6 +57,11 @@ class ConstantString(BasePrimitive, ConstantStringBase):
     def __copy__(self):
         return ConstantString(constr=self.constr)
 
+    def __hash__(self):
+        items = list(self.__dict__.items())
+        items.sort()
+        return hash(tuple(items))
+
 
 class ConstraintStringBase(NamedTuple):
     cstr: ConstantString
@@ -142,31 +147,41 @@ class NonNumericString(NonNumericStringBase, BasePrimitive):
 class PrimitiveMaker:
     ""
 
-    def __init__(self):
-        pass
+    def __init__(self, choice: str):
+        self.choice = choice
 
-    @staticmethod
-    def make_constant_string(mystr: str):
-        assert isinstance(mystr, str)
+    @classmethod
+    def make_constant_string(cls, mystr: str):
+        mess = "Incompatible type: " + type(mystr).__name__
+        mess += ". Only str type is allowed"
+        assert isinstance(mystr, str), mess
         constr = ConstantString(constr=mystr)
         assert constr.isValid()
         return constr
 
-    @staticmethod
-    def make_constraint_string(mystr: ConstantString, fnc: FunctionType):
-        assert isinstance(mystr, ConstantString)
+    @classmethod
+    def make_constraint_string(cls, mystr: ConstantString, fnc: FunctionType):
+        mess = "Incompatible type: " + type(mystr).__name__
+        mess += ". Only ConstantString type is allowed"
+        assert isinstance(mystr, ConstantString), mess
         assert isinstance(fnc, FunctionType)
         fname = fnc.__name__
         assert fname != "<lambda>"
-        return ConstraintString(cstr=mystr, fn=fnc)
+        cstr = ConstraintString(cstr=mystr, fn=fnc)
+        assert cstr.isValid()
+        return cstr
 
-    @staticmethod
-    def make_non_numeric_string(mystr: ConstantString):
-        assert isinstance(mystr, ConstantString)
-        return NonNumericString(cstr=mystr)
+    @classmethod
+    def make_non_numeric_string(cls, mystr: ConstantString):
+        mess = "Incompatible type: " + type(mystr).__name__
+        mess += ". Only ConstantString type is allowed"
+        assert isinstance(mystr, ConstantString), mess
+        nnstr = NonNumericString(cstr=mystr)
+        assert nnstr.isValid()
+        return nnstr
 
-    def make(self, choice: str, **kwargs):
-        choice = choice.lower()
+    def make(self, **kwargs):
+        choice = self.choice.lower()
         if choice == "constant string":
             return self.make_constant_string(**kwargs)
         elif choice == "constraint string":
@@ -176,14 +191,15 @@ class PrimitiveMaker:
         else:
             raise ValueError("Unknown primitive choice: " + choice)
 
-    def from_type(self, primitiveType, **kwargs):
+    @classmethod
+    def from_type(cls, primitiveType, **kwargs):
         "make primitive from giving its type"
         pname = primitiveType.__name__
         if pname == "ConstantString":
-            return self.make(choice="constant string", **kwargs)
+            return cls.make_constant_string(**kwargs)
         elif pname == "ConstraintString":
-            return self.make(choice="constraint string", **kwargs)
+            return cls.make_constraint_string(**kwargs)
         elif pname == "NonNumericString":
-            return self.make(choice="non numeric string", **kwargs)
+            return cls.make_non_numeric_string(**kwargs)
         else:
             raise ValueError("Unknown Primitive Type: " + pname)

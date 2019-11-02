@@ -86,8 +86,15 @@ All containers are immutable.
 
 - :code:`Mixed Pair`: a set with 2 members who are:
 
+    - a :code:`Constant String`
+    - a :code:`Tuple`
+
+
+- :code:`Constraint Mixed Pair`: a set with 2 members who are:
+
     - a :code:`Constraint String`
     - a :code:`Tuple`
+
 
 - :code:`Single Constraint Mixed Pair`: a :code:`Pair` whose members are:
 

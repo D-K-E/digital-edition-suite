@@ -15,7 +15,7 @@ class BasePair:
 
     def __iter__(self):
         "Make a pair iterable"
-        return iter(set(self.arg1, self.arg2))
+        return iter(set((self.arg1, self.arg2)))
 
     def isValid(self):
         cond1 = self.arg1.isValid()
@@ -289,11 +289,6 @@ class PairTuple(BaseTuple, PairTupleBase):
         return hash(tuple(items))
 
 
-def single_pair_tuple_init_check_proc(tpl):
-    assert isinstance(tpl, frozenset)
-    assert all([isinstance(e, SingleConstraintPair) for e in tpl])
-
-
 class SinglePairTupleBase(NamedTuple):
     elements: frozenset
 
@@ -331,11 +326,11 @@ class UniformPairTuple(BaseTuple, UniformPairTupleBase):
 
 
 def mixed_pair_init_check_proc(arg1, arg2):
-    pair_init_check_proc(arg1, arg2, ConstraintString, StringTuple)
+    pair_init_check_proc(arg1, arg2, ConstantString, StringTuple)
 
 
 class MixedPairBase(NamedTuple):
-    arg1: ConstraintString
+    arg1: ConstantString
     arg2: StringTuple
 
 
@@ -353,8 +348,27 @@ class MixedPair(BasePair, MixedPairBase):
         return hash(tuple(items))
 
 
-def single_constraint_mixed_pair_init_check_proc(arg1, arg2):
-    pair_init_check_proc(arg1, arg2, ConstraintString, SingleConstraintTuple)
+def constraint_mixed_pair_init_check_proc(arg1, arg2):
+    pair_init_check_proc(arg1, arg2, ConstraintString, StringTuple)
+
+
+class ConstraintMixedPairBase(NamedTuple):
+    arg1: ConstraintString
+    arg2: StringTuple
+
+
+class ConstraintMixedPair(BasePair, ConstraintMixedPairBase):
+    "Models Mixed Pair container from spec"
+
+    def __eq__(self, other):
+        if isinstance(other, ConstraintMixedPair):
+            return self.__eq_proc__(other)
+        return NotImplemented
+
+    def __hash__(self):
+        items = list(self.__dict__.items())
+        items.sort()
+        return hash(tuple(items))
 
 
 class SingleConstraintMixedPairBase(NamedTuple):
@@ -376,16 +390,6 @@ class SingleConstraintMixedPair(BasePair, SingleConstraintMixedPairBase):
         return hash(tuple(items))
 
 
-def uniform_mixed_pair_init_check_proc(arg1, arg2):
-    pair_init_check_proc(arg1, arg2, ConstraintString, SingleConstraintTuple)
-    fncs = set([p.fn.__name__ for p in arg2])
-    fncs.add(str1.fn.__name__)
-    assert len(fncs) == 1
-    fncs = list(fncs)
-    fnc = fncs[0]
-    assert fnc != "<lambda>"
-
-
 class UniformMixedPairBase(NamedTuple):
     arg1: ConstraintString
     arg2: SingleConstraintTuple
@@ -405,10 +409,6 @@ class UniformMixedPair(BasePair, UniformMixedPairBase):
         return hash(tuple(items))
 
 
-def non_numeric_mixed_pair_init_check_proc(arg1, arg2):
-    pair_init_check_proc(arg1, arg2, NonNumericString, SingleConstraintTuple)
-
-
 class NonNumericMixedPairBase(NamedTuple):
     arg1: NonNumericString
     arg2: SingleConstraintTuple
@@ -426,16 +426,6 @@ class NonNumericMixedPair(BasePair, NonNumericMixedPairBase):
         items = list(self.__dict__.items())
         items.sort()
         return hash(tuple(items))
-
-
-def uniform_non_numeric_mixed_pair_init_check_proc(arg1, arg2):
-    pair_init_check_proc(arg1, arg2, NonNumericString, SingleConstraintTuple)
-    fncs = set([p.fn.__name__ for p in arg2])
-    fncs.add(arg1.fn.__name__)
-    assert len(fncs) == 1
-    fncs = list(fncs)
-    fnc = fncs[0]
-    assert fnc != "<lambda>"
 
 
 class UniformNonNumericMixedPairBase(NamedTuple):
@@ -460,34 +450,32 @@ class UniformNonNumericMixedPair(BasePair, UniformNonNumericMixedPairBase):
 class ContainerMaker:
     "Container maker"
 
-    def __init__(self):
-        pass
+    def __init__(self, choice: str):
+        self.choice = choice
 
-    @staticmethod
-    def pair_init_check_proc(arg1, arg2, arg1type, arg2type):
-        mess = "arg1 needs to be of type " + str(arg1type)
+    @classmethod
+    def pair_init_check_proc(cls, arg1, arg2, arg1type, arg2type):
+        mess = "arg1 needs to be of type " + str(arg1type.__name__)
+        mess += " but it is: " + str(type(arg1).__name__)
         assert isinstance(arg1, arg1type), mess
-        mess = "arg2 needs to be of type " + str(arg2type)
+        mess = "arg2 needs to be of type " + str(arg2type.__name__)
+        mess += " but it is: " + str(type(arg2).__name__)
         assert isinstance(arg2, arg2type), mess
         assert arg1.isValid()
         assert arg2.isValid()
 
-    @staticmethod
-    def single_constraint_pair_init_check_proc(arg1, arg2):
-        ContainerMaker.pair_init_check_proc(
-            arg1, arg2, ConstraintString, ConstraintString
-        )
+    @classmethod
+    def single_constraint_pair_init_check_proc(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, ConstraintString, ConstraintString)
         myfn = arg1.fn
         mess = "anonymous functions are not allowed as constraints"
-        assert arg1.__name__ != "<lambda>", mess
+        assert myfn.__name__ != "<lambda>", mess
         mess = "constraint strings are not bound to same constraint"
         assert arg1.fn.__name__ == arg2.fn.__name__, mess
 
-    @staticmethod
-    def double_constraint_pair_init_check_proc(arg1, arg2):
-        ContainerMaker.pair_init_check_proc(
-            arg1, arg2, ConstraintString, ConstraintString
-        )
+    @classmethod
+    def double_constraint_pair_init_check_proc(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, ConstraintString, ConstraintString)
         myfn1 = arg1.fn
         myfn2 = arg2.fn
         mess = "anonymous functions are not allowed as constraints"
@@ -496,104 +484,307 @@ class ContainerMaker:
         mess = "Arguments need to have different constraints"
         assert myfn1.__name__ != myfn2.__name__, mess
 
-    @staticmethod
-    def nested_pair_init_check_proc(arg1, arg2):
-        ContainerMaker.pair_init_check_proc(arg1, arg2, ConstantString, Pair)
+    @classmethod
+    def nested_pair_init_check_proc(csl, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, ConstantString, Pair)
 
-    @staticmethod
-    def constraint_nested_pair_check_proc(arg1, arg2):
-        ContainerMaker.pair_init_check_proc(arg1, arg2, ConstraintString, Pair)
+    @classmethod
+    def constraint_nested_pair_check_proc(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, ConstraintString, Pair)
 
-    @staticmethod
-    def constraint_nested_single_pair_check_proc(arg1, arg2):
-        ContainerMaker.pair_init_check_proc(
-            arg1, arg2, ConstraintString, SingleConstraintPair
-        )
+    @classmethod
+    def constraint_nested_single_pair_check_proc(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, ConstraintString, SingleConstraintPair)
 
-    @staticmethod
-    def tuple_init_check_proc(els, elsType, elType):
+    @classmethod
+    def tuple_init_check_proc(cls, els, elsType, elType):
         assert isinstance(els, elsType)
         assert all([isinstance(e, elType) for e in els])
 
-    @staticmethod
-    def string_tuple_init_check_proc(els):
-        ContainerMaker.tuple_init_check_proc(els, frozenset, ConstantString)
+    @classmethod
+    def string_tuple_init_check_proc(cls, els):
+        cls.tuple_init_check_proc(els, frozenset, ConstantString)
 
-    @staticmethod
-    def single_constraint_tuple_init_check_proc(els):
-        ContainerMaker.tuple_init_check_proc(els, frozenset, ConstraintString)
+    @classmethod
+    def single_constraint_tuple_init_check_proc(cls, els):
+        cls.tuple_init_check_proc(els, frozenset, ConstraintString)
         fncs = set([s.fn.__name__ for s in els])
         assert len(fncs) == 1
         fncs = list(fncs)
         fnc = fncs[0]
         assert fnc != "<lambda>"
 
-    @staticmethod
-    def non_numeric_tuple_init_check_proc(els):
-        ContainerMaker.tuple_init_check_proc(els, frozenset, NonNumericString)
+    @classmethod
+    def non_numeric_tuple_init_check_proc(cls, els):
+        cls.tuple_init_check_proc(els, frozenset, NonNumericString)
         fncs = set([s.fn.__name__ for s in els])
         assert len(fncs) == 1
         fncs = list(fncs)
         fnc = fncs[0]
         assert fnc != "<lambda>"
 
-    @staticmethod
-    def pair_tuple_init_check_proc(els):
-        ContainerMaker.tuple_init_check_proc(els, frozenset, Pair)
+    @classmethod
+    def pair_tuple_init_check_proc(cls, els):
+        cls.tuple_init_check_proc(els, frozenset, Pair)
 
-    @staticmethod
-    def single_pair_tuple_init_check_proc(els):
-        ContainerMaker.tuple_init_check_proc(els, frozenset, SingleConstraintPair)
+    @classmethod
+    def single_pair_tuple_init_check_proc(cls, els):
+        cls.tuple_init_check_proc(els, frozenset, SingleConstraintPair)
 
-    @staticmethod
-    def uniform_pair_tuple_init_check_proc(els):
-        ContainerMaker.tuple_init_check_proc(els, frozenset, SingleConstraintPair)
+    @classmethod
+    def uniform_pair_tuple_init_check_proc(cls, els):
+        cls.tuple_init_check_proc(els, frozenset, SingleConstraintPair)
         fncs = set([p.arg1.fn.__name__ for p in els])
         assert len(fncs) == 1
         fncs = list(fncs)
         fnc = fncs[0]
         assert fnc != "<lambda>"
 
-    @staticmethod
-    def mixed_pair_init_check_proc(arg1, arg2):
-        ContainerMaker.pair_init_check_proc(arg1, arg2, ConstraintString, StringTuple)
+    @classmethod
+    def mixed_pair_init_check_proc(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, ConstantString, StringTuple)
 
-    @staticmethod
-    def make_pair(arg1, arg2):
-        ContainerMaker.pair_init_check_proc(arg1, arg2, ConstantString, ConstantString)
-        return Pair(arg1, arg2)
+    @classmethod
+    def constraint_mixed_pair_init_check_proc(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, ConstraintString, StringTuple)
 
-    @staticmethod
-    def make_single_constraint_pair(arg1, arg2):
-        ContainerMaker.single_constraint_pair_init_check_proc(arg1, arg2)
-        return SingleConstraintPair(arg1, arg2)
+    @classmethod
+    def single_constraint_mixed_pair_init_check_proc(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, ConstraintString, SingleConstraintTuple)
 
-    @staticmethod
-    def make_double_constraint_pair(arg1, arg2):
-        ContainerMaker.double_constraint_pair_init_check_proc(arg1, arg2)
-        return DoubleConstraintPair(arg1, arg2)
+    @classmethod
+    def uniform_constraint_mixed_pair_init_check_proc(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, ConstraintString, SingleConstraintTuple)
+        fncs = set([p.fn.__name__ for p in arg2])
+        fncs.add(str1.fn.__name__)
+        assert len(fncs) == 1
+        fncs = list(fncs)
+        fnc = fncs[0]
+        assert fnc != "<lambda>"
 
-    @staticmethod
-    def make_nested_pair(arg1, arg2):
-        ContainerMaker.nested_pair_init_check_proc(arg1, arg2)
-        return NestedPair(arg1, arg2)
+    @classmethod
+    def non_numeric_mixed_pair_init_check_proc(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, NonNumericString, SingleConstraintTuple)
 
-    @staticmethod
-    def make_constraint_nested_pair(arg1, arg2):
-        ContainerMaker.constraint_nested_pair_check_proc(arg1, arg2)
-        return ConstraintNestedPair(arg1, arg2)
+    @classmethod
+    def uniform_non_numeric_mixed_pair_init_check_proc(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, NonNumericString, SingleConstraintTuple)
+        fncs = set([p.fn.__name__ for p in arg2])
+        fncs.add(arg1.fn.__name__)
+        assert len(fncs) == 1
+        fncs = list(fncs)
+        fnc = fncs[0]
+        assert fnc != "<lambda>"
 
-    @staticmethod
-    def make_constraint_nested_single_constraint_pair(arg1, arg2):
-        ContainerMaker.constraint_nested_single_pair_check_proc(arg1, arg2)
-        return ConstraintNestedSingleConstraintPair(arg1, arg2)
+    @classmethod
+    def make_pair(cls, arg1, arg2):
+        cls.pair_init_check_proc(arg1, arg2, ConstantString, ConstantString)
+        p = Pair(arg1, arg2)
+        assert p.isValid()
+        return p
 
-    @staticmethod
-    def make_string_tuple(els):
-        ContainerMaker.string_tuple_init_check_proc(els)
-        return StringTuple(elements=els)
+    @classmethod
+    def make_single_constraint_pair(cls, arg1, arg2):
+        cls.single_constraint_pair_init_check_proc(arg1, arg2)
+        p = SingleConstraintPair(arg1, arg2)
+        assert p.isValid()
+        return p
 
-    @staticmethod
-    def make_single_constraint_tuple(els):
-        ContainerMaker.single_constraint_tuple_init_check_proc(els)
-        return SingleConstraintTuple(elements=els)
+    @classmethod
+    def make_double_constraint_pair(cls, arg1, arg2):
+        cls.double_constraint_pair_init_check_proc(arg1, arg2)
+        p= DoubleConstraintPair(arg1, arg2)
+        assert p.isValid()
+        return p
+
+
+    @classmethod
+    def make_nested_pair(cls, arg1, arg2):
+        cls.nested_pair_init_check_proc(arg1, arg2)
+        p = NestedPair(arg1, arg2)
+        assert p.isValid()
+        return p
+
+    @classmethod
+    def make_constraint_nested_pair(cls, arg1, arg2):
+        cls.constraint_nested_pair_check_proc(arg1, arg2)
+        p = ConstraintNestedPair(arg1, arg2)
+        assert p.isValid()
+        return p
+
+    @classmethod
+    def make_constraint_nested_single_constraint_pair(cls, arg1, arg2):
+        cls.constraint_nested_single_pair_check_proc(arg1, arg2)
+        p = ConstraintNestedSingleConstraintPair(arg1, arg2)
+        assert p.isValid()
+        return p
+
+    @classmethod
+    def make_string_tuple(cls, els):
+        cls.string_tuple_init_check_proc(els)
+        tpl = StringTuple(elements=els)
+        assert tpl.isValid()
+        return tpl
+
+    @classmethod
+    def make_single_constraint_tuple(cls, els):
+        cls.single_constraint_tuple_init_check_proc(els)
+        tpl = SingleConstraintTuple(elements=els)
+        assert tpl.isValid()
+        return tpl
+
+    @classmethod
+    def make_non_numeric_tuple(cls, els):
+        cls.non_numeric_tuple_init_check_proc(els)
+        tpl = NonNumericTuple(elements=els)
+        assert tpl.isValid()
+        return tpl
+
+    @classmethod
+    def make_pair_tuple(cls, els):
+        cls.pair_tuple_init_check_proc(els)
+        tpl = PairTuple(elements=els)
+        assert tpl.isValid()
+        return tpl
+
+    @classmethod
+    def make_single_pair_tuple(cls, els):
+        cls.single_pair_tuple_init_check_proc(els)
+        tpl = SinglePairTuple(elements=els)
+        assert tpl.isValid()
+        return tpl
+
+    @classmethod
+    def make_uniform_pair_tuple(cls, els):
+        cls.uniform_pair_tuple_init_check_proc(els)
+        tpl = UniformPairTuple(elements=els)
+        assert tpl.isValid()
+        return tpl
+
+    @classmethod
+    def make_mixed_pair(cls, arg1, arg2):
+        cls.mixed_pair_init_check_proc(arg1, arg2)
+        p = MixedPair(arg1, arg2)
+        assert p.isValid()
+        return p
+
+    @classmethod
+    def make_constraint_mixed_pair(cls, arg1, arg2):
+        cls.constraint_mixed_pair_init_check_proc(arg1, arg2)
+        p = ConstraintMixedPair(arg1, arg2)
+        assert p.isValid()
+        return p
+
+    @classmethod
+    def make_single_constraint_mixed_pair(cls, arg1, arg2):
+        cls.single_constraint_mixed_pair_init_check_proc(arg1, arg2)
+        p = SingleConstraintMixedPair(arg1, arg2)
+        assert p.isValid()
+        return p
+
+    @classmethod
+    def make_uniform_mixed_pair(cls, arg1, arg2):
+        cls.uniform_constraint_mixed_pair_init_check_proc(arg1, arg2)
+        p = UniformMixedPair(arg1, arg2)
+        assert p.isValid()
+        return p
+
+    @classmethod
+    def make_non_numeric_mixed_pair(cls, arg1, arg2):
+        cls.non_numeric_mixed_pair_init_check_proc(arg1, arg2)
+        p = NonNumericMixedPair(arg1, arg2)
+        assert p.isValid()
+        return p
+
+    @classmethod
+    def make_uniform_non_numeric_mixed_pair(cls, arg1, arg2):
+        cls.uniform_non_numeric_mixed_pair_init_check_proc(arg1, arg2)
+        p = UniformNonNumericMixedPair(arg1, arg2)
+        assert p.isValid()
+        return p
+
+    @classmethod
+    def from_type(cls, objType, **kwargs):
+        objname = objType.__class_.__name__
+        if objname == "Pair":
+            arg1, arg2 = kwargs["arg1"], kwargs["arg2"]
+            return cls.make_pair(arg1=arg1, arg2=arg2)
+        elif objname == "SingleConstraintPair":
+            return cls.make_single_constraint_pair(**kwargs)
+        elif objname == "DoubleConstraintPair":
+            return cls.make_double_constraint_pair(**kwargs)
+        elif objname == "NestedPair":
+            return cls.make_nested_pair(**kwargs)
+        elif objname == "ConstraintNestedPair":
+            return cls.make_constraint_nested_pair(**kwargs)
+        elif objname == "ConstraintNestedSingleConstraintPair":
+            return cls.make_constraint_nested_single_constraint_pair(**kwargs)
+        elif objname == "StringTuple":
+            return cls.make_string_tuple(**kwargs)
+        elif objname == "SingleConstraintTuple":
+            return cls.make_single_constraint_tuple(**kwargs)
+        elif objname == "NonNumericTuple":
+            return cls.make_non_numeric_tuple(**kwargs)
+        elif objname == "PairTuple":
+            return cls.make_pair_tuple(**kwargs)
+        elif objname == "SinglePairTuple":
+            return cls.make_single_pair_tuple(**kwargs)
+        elif objname == "UniformPairTuple":
+            return cls.make_uniform_pair_tuple(**kwargs)
+        elif objname == "MixedPair":
+            return cls.make_mixed_pair(**kwargs)
+        elif objname == "ConstraintMixedPair":
+            return cls.make_constraint_mixed_pair(**kwargs)
+        elif objname == "SingleConstraintMixedPair":
+            return cls.make_single_constraint_mixed_pair(**kwargs)
+        elif objname == "UniformMixedPair":
+            return cls.make_uniform_mixed_pair(**kwargs)
+        elif objname == "NonNumericMixedPair":
+            return cls.make_non_numeric_mixed_pair(**kwargs)
+        elif objname == "UniformNonNumericMixedPair":
+            return cls.make_uniform_non_numeric_mixed_pair(**kwargs)
+        else:
+            raise ValueError("Unknown object type: " + objname)
+
+    def make(self, **kwargs):
+        "make object based on choice"
+        choice = self.choice.lower()
+        if choice == "pair":
+            arg1, arg2 = kwargs["arg1"], kwargs["arg2"]
+            return self.make_pair(arg1, arg2)
+        elif choice == "single constraint pair":
+            return self.make_single_constraint_pair(**kwargs)
+        elif choice == "double constraint pair":
+            return self.make_double_constraint_pair(**kwargs)
+        elif choice == "nested pair":
+            return self.make_nested_pair(**kwargs)
+        elif choice == "constraint nested pair":
+            return self.make_constraint_nested_pair(**kwargs)
+        elif choice == "constraint nested single constraint pair":
+            return self.make_constraint_nested_single_constraint_pair(**kwargs)
+        elif choice == "tuple":
+            return self.make_string_tuple(**kwargs)
+        elif choice == "single constraint tuple":
+            return self.make_single_constraint_tuple(**kwargs)
+        elif choice == "non numeric tuple":
+            return self.make_non_numeric_tuple(**kwargs)
+        elif choice == "pair tuple":
+            return self.make_pair_tuple(**kwargs)
+        elif choice == "single pair tuple":
+            return self.make_single_pair_tuple(**kwargs)
+        elif choice == "uniform pair tuple":
+            return self.make_uniform_pair_tuple(**kwargs)
+        elif objname == "mixed pair":
+            return self.make_mixed_pair(**kwargs)
+        elif objname == "constraint mixed pair":
+            return self.make_constraint_mixed_pair(**kwargs)
+        elif objname == "single constraint mixed pair":
+            return self.make_single_constraint_mixed_pair(**kwargs)
+        elif objname == "uniform mixed pair":
+            return self.make_uniform_mixed_pair(**kwargs)
+        elif objname == "non numeric mixed pair":
+            return self.make_non_numeric_mixed_pair(**kwargs)
+        elif objname == "uniform non numeric mixed pair":
+            return self.make_uniform_non_numeric_mixed_pair(**kwargs)
+        else:
+            raise ValueError("Unknown choice: " + choice)

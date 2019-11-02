@@ -67,7 +67,6 @@ class PrimitiveJsonIo(PrimitiveIo):
 class PrimitiveIoBuilder:
     "Base Io builder for available primitive io objects"
     SUPPORTED = ["xml", "json"]
-    maker = PrimitiveMaker()
 
     class XmlIo:
         pass
@@ -112,9 +111,8 @@ class ConstantStringIo(PrimitiveIoBuilder):
             "from element"
             assert el.get("class") == "ConstantString"
             elstr = el.text
-            constr = PrimitiveIoBuilder.maker.make(
-                choice="constant string", mystr=elstr
-            )
+            maker = PrimitiveMaker("constant string")
+            constr = maker.make(mystr=elstr)
             return constr
 
     class JsonIo(PrimitiveJsonIo):
@@ -134,9 +132,8 @@ class ConstantStringIo(PrimitiveIoBuilder):
             "render constant string from dict"
             assert cdict["class"] == "ConstantString"
             assert cdict["type"] == "primitive"
-            constr = PrimitiveIoBuilder.maker.make(
-                choice="constant string", mystr=cdict["value"]
-            )
+            maker = PrimitiveMaker("constant string")
+            constr = maker.make(mystr=cdict["value"])
             return constr
 
         @classmethod
@@ -170,7 +167,8 @@ class ConstraintStringIo(PrimitiveIoBuilder):
         @staticmethod
         def text_to_constant_string(text: str) -> ConstantString:
             "transform string to constant string"
-            return PrimitiveIoBuilder.maker.make(choice="constant string", mystr=text)
+            maker = PrimitiveMaker("constant string")
+            return maker.make(mystr=text)
 
         def to_element(self):
             "render default representation for constraint string"
@@ -190,9 +188,8 @@ class ConstraintStringIo(PrimitiveIoBuilder):
             myfn = dill.loads(myfn)
             cstr = element.text
             constr = cls.text_to_constant_string(cstr)
-            return PrimitiveIoBuilder.maker.make(
-                choice="constraint string", mystr=constr, fnc=myfn
-            )
+            maker = PrimitiveMaker("constraint string")
+            return maker.make(mystr=constr, fnc=myfn)
 
     class JsonIo(PrimitiveJsonIo):
         "Render Constraint String as Json"
@@ -235,9 +232,8 @@ class ConstraintStringIo(PrimitiveIoBuilder):
             myfnc = dill.loads(myfn)
             constrdict = cdict["value"]
             constr = cls.dict_to_constant_string(constrdict)
-            return PrimitiveIoBuilder.maker.make(
-                choice="constraint string", mystr=constr, fnc=myfnc
-            )
+            maker = PrimitiveMaker("constraint string")
+            return maker.make(mystr=constr, fnc=myfnc)
 
         @classmethod
         def from_json(cls, jsonstr: str):
@@ -270,7 +266,8 @@ class NonNumericStringIo(PrimitiveIoBuilder):
         @staticmethod
         def text_to_constant_string(text: str) -> ConstantString:
             "transform string to constant string"
-            return PrimitiveIoBuilder.maker.make(choice="constant string", mystr=text)
+            maker = PrimitiveMaker("constant string")
+            return maker.make(mystr=text)
 
         def to_element(self):
             "render default representation for constraint string"
@@ -288,9 +285,8 @@ class NonNumericStringIo(PrimitiveIoBuilder):
             assert element.tag == "primitive"
             cstr = element.text
             constr = cls.text_to_constant_string(cstr)
-            return PrimitiveIoBuilder.maker.make(
-                choice="non numeric string", mystr=constr
-            )
+            maker = PrimitiveMaker("non numeric string")
+            return maker.make(mystr=constr)
 
     class JsonIo(PrimitiveJsonIo):
         "Io Constraint String as Json"
@@ -332,9 +328,8 @@ class NonNumericStringIo(PrimitiveIoBuilder):
             assert objdict["class"] == "NonNumericString"
             assert objdict["type"] == "primitive"
             constr = cls.dict_to_constant_string(objdict["value"])
-            return PrimitiveIoBuilder.maker.make(
-                choice="non numeric string", mystr=constr
-            )
+            maker = PrimitiveMaker("non numeric string")
+            return maker.make(mystr=constr)
 
     def getIoInstance(self, render_format: str):
         "render constraint string in given format"
