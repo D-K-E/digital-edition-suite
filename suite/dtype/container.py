@@ -183,11 +183,6 @@ class ConstraintNestedSingleConstraintPair(
         return hash(tuple(items))
 
 
-def base_tuple_init_check_proc(tpl, tplType, elType):
-    assert isinstance(tpl, tpltype)
-    assert all([isinstance(e, elType) for e in tpl])
-
-
 class BaseTuple:
     "Abstract class for containers in spec"
 
@@ -457,32 +452,51 @@ class ContainerMaker:
     def pair_init_check_proc(cls, arg1, arg2, arg1type, arg2type):
         mess = "arg1 needs to be of type " + str(arg1type.__name__)
         mess += " but it is: " + str(type(arg1).__name__)
-        assert isinstance(arg1, arg1type), mess
+        if not isinstance(arg1, arg1type):
+            raise TypeError(mess)
         mess = "arg2 needs to be of type " + str(arg2type.__name__)
         mess += " but it is: " + str(type(arg2).__name__)
-        assert isinstance(arg2, arg2type), mess
-        assert arg1.isValid()
-        assert arg2.isValid()
+        if not isinstance(arg2, arg2type):
+            raise TypeError(mess)
+        if not arg1.isValid():
+            raise ValueError("arg1 is not valid: " + str(arg1))
+        if not arg2.isValid():
+            raise ValueError("arg2 is not valid: " + str(arg2))
 
     @classmethod
     def single_constraint_pair_init_check_proc(cls, arg1, arg2):
         cls.pair_init_check_proc(arg1, arg2, ConstraintString, ConstraintString)
         myfn = arg1.fn
+        if not isinstance(myfn, FunctionType):
+            raise TypeError("arg1.fn needs to be a function")
+        afnc = arg2.fn
+        if not isinstance(afnc, FunctionType):
+            raise TypeError("arg2.fn needs to be a function")
         mess = "anonymous functions are not allowed as constraints"
-        assert myfn.__name__ != "<lambda>", mess
+        if not myfn.__name__ != "<lambda>":
+            raise ValueError(mess)
         mess = "constraint strings are not bound to same constraint"
-        assert arg1.fn.__name__ == arg2.fn.__name__, mess
+        if not arg1.fn.__name__ == arg2.fn.__name__:
+            raise ValueError(mess)
 
     @classmethod
     def double_constraint_pair_init_check_proc(cls, arg1, arg2):
         cls.pair_init_check_proc(arg1, arg2, ConstraintString, ConstraintString)
         myfn1 = arg1.fn
         myfn2 = arg2.fn
+        if not isinstance(myfn1, FunctionType):
+            raise TypeError("arg1.fn needs to be a function")
+        if not isinstance(myfn2, FunctionType):
+            raise TypeError("arg2.fn needs to be a function")
+
         mess = "anonymous functions are not allowed as constraints"
-        assert myfn1.__name__ != "<lambda>", mess + " see arg1 argument"
-        assert myfn2.__name__ != "<lambda>", mess + " see arg2 argument"
+        if not myfn1.__name__ != "<lambda>":
+            raise ValueError(mess + " see arg1 argument")
+        if not myfn2.__name__ != "<lambda>":
+            raise ValueError(mess + " see arg2 argument")
         mess = "Arguments need to have different constraints"
-        assert myfn1.__name__ != myfn2.__name__, mess
+        if not myfn1.__name__ != myfn2.__name__:
+            raise ValueError(mess)
 
     @classmethod
     def nested_pair_init_check_proc(csl, arg1, arg2):
@@ -498,8 +512,10 @@ class ContainerMaker:
 
     @classmethod
     def tuple_init_check_proc(cls, els, elsType, elType):
-        assert isinstance(els, elsType)
-        assert all([isinstance(e, elType) for e in els])
+        if not isinstance(els, elsType):
+            raise TypeError("elements are not of excepted type: " + elsType.__name__)
+        if not all([isinstance(e, elType) for e in els]):
+            raise TypeError("All elements are not of type: " + elType.__name__)
 
     @classmethod
     def string_tuple_init_check_proc(cls, els):
@@ -509,19 +525,23 @@ class ContainerMaker:
     def single_constraint_tuple_init_check_proc(cls, els):
         cls.tuple_init_check_proc(els, frozenset, ConstraintString)
         fncs = set([s.fn.__name__ for s in els])
-        assert len(fncs) == 1
+        if not len(fncs) == 1:
+            raise ValueError("More than one constraint exist among member strings")
         fncs = list(fncs)
         fnc = fncs[0]
-        assert fnc != "<lambda>"
+        if not fnc != "<lambda>":
+            raise ValueError("Anonymous functions are not allowed")
 
     @classmethod
     def non_numeric_tuple_init_check_proc(cls, els):
         cls.tuple_init_check_proc(els, frozenset, NonNumericString)
         fncs = set([s.fn.__name__ for s in els])
-        assert len(fncs) == 1
+        if not len(fncs) == 1:
+            raise ValueError("More than one constraint exist for members")
         fncs = list(fncs)
         fnc = fncs[0]
-        assert fnc != "<lambda>"
+        if not fnc != "<lambda>":
+            raise ValueError("Anonymous functions are not allowed")
 
     @classmethod
     def pair_tuple_init_check_proc(cls, els):
@@ -535,10 +555,12 @@ class ContainerMaker:
     def uniform_pair_tuple_init_check_proc(cls, els):
         cls.tuple_init_check_proc(els, frozenset, SingleConstraintPair)
         fncs = set([p.arg1.fn.__name__ for p in els])
-        assert len(fncs) == 1
+        if not len(fncs) == 1:
+            raise ValueError("More than one constraint exist for members")
         fncs = list(fncs)
         fnc = fncs[0]
-        assert fnc != "<lambda>"
+        if not fnc != "<lambda>":
+            raise ValueError("Anonymous functions are not allowed")
 
     @classmethod
     def mixed_pair_init_check_proc(cls, arg1, arg2):
@@ -557,10 +579,12 @@ class ContainerMaker:
         cls.pair_init_check_proc(arg1, arg2, ConstraintString, SingleConstraintTuple)
         fncs = set([p.fn.__name__ for p in arg2])
         fncs.add(str1.fn.__name__)
-        assert len(fncs) == 1
+        if not len(fncs) == 1:
+            raise ValueError("More than one constraint exist for members")
         fncs = list(fncs)
         fnc = fncs[0]
-        assert fnc != "<lambda>"
+        if not fnc != "<lambda>":
+            raise ValueError("Anonymous functions are not allowed")
 
     @classmethod
     def non_numeric_mixed_pair_init_check_proc(cls, arg1, arg2):
@@ -571,136 +595,155 @@ class ContainerMaker:
         cls.pair_init_check_proc(arg1, arg2, NonNumericString, SingleConstraintTuple)
         fncs = set([p.fn.__name__ for p in arg2])
         fncs.add(arg1.fn.__name__)
-        assert len(fncs) == 1
+        if not len(fncs) == 1:
+            raise ValueError("More than one constraint exist for members")
         fncs = list(fncs)
         fnc = fncs[0]
-        assert fnc != "<lambda>"
+        if not fnc != "<lambda>":
+            raise ValueError("Anonymous functions are not allowed")
 
     @classmethod
     def make_pair(cls, arg1, arg2):
         cls.pair_init_check_proc(arg1, arg2, ConstantString, ConstantString)
         p = Pair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod
     def make_single_constraint_pair(cls, arg1, arg2):
         cls.single_constraint_pair_init_check_proc(arg1, arg2)
         p = SingleConstraintPair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod
     def make_double_constraint_pair(cls, arg1, arg2):
         cls.double_constraint_pair_init_check_proc(arg1, arg2)
-        p= DoubleConstraintPair(arg1, arg2)
-        assert p.isValid()
+        p = DoubleConstraintPair(arg1, arg2)
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
-
 
     @classmethod
     def make_nested_pair(cls, arg1, arg2):
         cls.nested_pair_init_check_proc(arg1, arg2)
         p = NestedPair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod
     def make_constraint_nested_pair(cls, arg1, arg2):
         cls.constraint_nested_pair_check_proc(arg1, arg2)
         p = ConstraintNestedPair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod
     def make_constraint_nested_single_constraint_pair(cls, arg1, arg2):
         cls.constraint_nested_single_pair_check_proc(arg1, arg2)
         p = ConstraintNestedSingleConstraintPair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod
     def make_string_tuple(cls, els):
         cls.string_tuple_init_check_proc(els)
         tpl = StringTuple(elements=els)
-        assert tpl.isValid()
+        if not tpl.isValid():
+            raise ValueError("Invalid " + type(tpl).__name__ + " as " + str(tpl))
         return tpl
 
     @classmethod
     def make_single_constraint_tuple(cls, els):
         cls.single_constraint_tuple_init_check_proc(els)
         tpl = SingleConstraintTuple(elements=els)
-        assert tpl.isValid()
+        if not tpl.isValid():
+            raise ValueError("Invalid " + type(tpl).__name__ + " as " + str(tpl))
         return tpl
 
     @classmethod
     def make_non_numeric_tuple(cls, els):
         cls.non_numeric_tuple_init_check_proc(els)
         tpl = NonNumericTuple(elements=els)
-        assert tpl.isValid()
+        if not tpl.isValid():
+            raise ValueError("Invalid " + type(tpl).__name__ + " as " + str(tpl))
         return tpl
 
     @classmethod
     def make_pair_tuple(cls, els):
         cls.pair_tuple_init_check_proc(els)
         tpl = PairTuple(elements=els)
-        assert tpl.isValid()
+        if not tpl.isValid():
+            raise ValueError("Invalid " + type(tpl).__name__ + " as " + str(tpl))
         return tpl
 
     @classmethod
     def make_single_pair_tuple(cls, els):
         cls.single_pair_tuple_init_check_proc(els)
         tpl = SinglePairTuple(elements=els)
-        assert tpl.isValid()
+        if not tpl.isValid():
+            raise ValueError("Invalid " + type(tpl).__name__ + " as " + str(tpl))
         return tpl
 
     @classmethod
     def make_uniform_pair_tuple(cls, els):
         cls.uniform_pair_tuple_init_check_proc(els)
         tpl = UniformPairTuple(elements=els)
-        assert tpl.isValid()
+        if not tpl.isValid():
+            raise ValueError("Invalid " + type(tpl).__name__ + " as " + str(tpl))
         return tpl
 
     @classmethod
     def make_mixed_pair(cls, arg1, arg2):
         cls.mixed_pair_init_check_proc(arg1, arg2)
         p = MixedPair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod
     def make_constraint_mixed_pair(cls, arg1, arg2):
         cls.constraint_mixed_pair_init_check_proc(arg1, arg2)
         p = ConstraintMixedPair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod
     def make_single_constraint_mixed_pair(cls, arg1, arg2):
         cls.single_constraint_mixed_pair_init_check_proc(arg1, arg2)
         p = SingleConstraintMixedPair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod
     def make_uniform_mixed_pair(cls, arg1, arg2):
         cls.uniform_constraint_mixed_pair_init_check_proc(arg1, arg2)
         p = UniformMixedPair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod
     def make_non_numeric_mixed_pair(cls, arg1, arg2):
         cls.non_numeric_mixed_pair_init_check_proc(arg1, arg2)
         p = NonNumericMixedPair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod
     def make_uniform_non_numeric_mixed_pair(cls, arg1, arg2):
         cls.uniform_non_numeric_mixed_pair_init_check_proc(arg1, arg2)
         p = UniformNonNumericMixedPair(arg1, arg2)
-        assert p.isValid()
+        if not p.isValid():
+            raise ValueError("Invalid " + type(p).__name__ + " as " + str(p))
         return p
 
     @classmethod

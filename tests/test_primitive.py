@@ -32,19 +32,19 @@ class TestPrimitive(unittest.TestCase):
         check = False
         try:
             pmaker.make_constant_string(1235)
-        except AssertionError:
+        except TypeError:
             check = True
         self.assertTrue(check)
         check = False
         try:
             pmaker.make_constant_string(1235.05)
-        except AssertionError:
+        except TypeError:
             check = True
         self.assertTrue(check)
         check = False
         try:
             pmaker.make_constant_string(True)
-        except AssertionError:
+        except TypeError:
             check = True
         self.assertTrue(check)
 
@@ -72,7 +72,7 @@ class TestPrimitive(unittest.TestCase):
             cstr2 = pmaker.from_type(
                 primitiveType=ConstraintString, mystr=costr2, fnc=lfn
             )
-        except AssertionError:
+        except ValueError:
             check = True
 
         self.assertEqual(True, cstr1.isValid())
@@ -93,25 +93,25 @@ class TestPrimitive(unittest.TestCase):
         check = False
         try:
             cstr3 = pmaker.make(mystr=costr3)
-        except AssertionError:
+        except ValueError:
             check = True
         self.assertEqual(True, check)
         check = False
         try:
             cstr4 = pmaker.make(mystr=costr4)
-        except AssertionError:
+        except ValueError:
             check = True
         self.assertEqual(True, check)
         check = False
         try:
             cstr5 = pmaker.make(mystr=costr5)
-        except AssertionError:
+        except ValueError:
             check = True
         self.assertEqual(True, check)
         check = False
         try:
             cstr6 = pmaker.make(mystr=costr6)
-        except AssertionError:
+        except ValueError:
             check = True
         self.assertEqual(True, check)
 

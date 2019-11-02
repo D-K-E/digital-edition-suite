@@ -91,6 +91,11 @@ class ConstraintString(BasePrimitive, ConstraintStringBase):
     def __copy__(self):
         return ConstraintString(cstr=self.cstr, fn=self.fn)
 
+    def __hash__(self):
+        items = list(self.__dict__.items())
+        items.sort()
+        return hash(tuple(items))
+
 
 def nonNumeric(myx: ConstantString) -> bool:
     x = myx.constr
@@ -143,6 +148,11 @@ class NonNumericString(NonNumericStringBase, BasePrimitive):
     def __copy__(self):
         return NonNumericString(cstr=self.cstr, fn=self.fn)
 
+    def __hash__(self):
+        items = list(self.__dict__.items())
+        items.sort()
+        return hash(tuple(items))
+
 
 class PrimitiveMaker:
     ""
@@ -154,30 +164,41 @@ class PrimitiveMaker:
     def make_constant_string(cls, mystr: str):
         mess = "Incompatible type: " + type(mystr).__name__
         mess += ". Only str type is allowed"
-        assert isinstance(mystr, str), mess
+        if not isinstance(mystr, str):
+            raise TypeError(mess)
         constr = ConstantString(constr=mystr)
-        assert constr.isValid()
+        if not constr.isValid():
+            raise ValueError("Not valid ConstantString: " + str(constr))
         return constr
 
     @classmethod
     def make_constraint_string(cls, mystr: ConstantString, fnc: FunctionType):
         mess = "Incompatible type: " + type(mystr).__name__
         mess += ". Only ConstantString type is allowed"
-        assert isinstance(mystr, ConstantString), mess
-        assert isinstance(fnc, FunctionType)
+        if not isinstance(mystr, ConstantString):
+            raise TypeError(mess)
+        mess = "Incompatible type: " + type(fnc).__name__
+        mess += ". Only FunctionType type is allowed"
+        if not isinstance(fnc, FunctionType):
+            raise TypeError(mess)
         fname = fnc.__name__
-        assert fname != "<lambda>"
+        mess = "Anonymous functions are not allowed."
+        if not fname != "<lambda>":
+            raise ValueError(mess)
         cstr = ConstraintString(cstr=mystr, fn=fnc)
-        assert cstr.isValid()
+        if not cstr.isValid():
+            raise ValueError("Invalid ConstraintString: " + str(cstr))
         return cstr
 
     @classmethod
     def make_non_numeric_string(cls, mystr: ConstantString):
         mess = "Incompatible type: " + type(mystr).__name__
         mess += ". Only ConstantString type is allowed"
-        assert isinstance(mystr, ConstantString), mess
+        if not isinstance(mystr, ConstantString):
+            raise TypeError(mess)
         nnstr = NonNumericString(cstr=mystr)
-        assert nnstr.isValid()
+        if not nnstr.isValid():
+            raise ValueError("Not valid NonNumericString: " + str(nnstr))
         return nnstr
 
     def make(self, **kwargs):
