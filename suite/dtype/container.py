@@ -476,7 +476,7 @@ class ContainerMaker:
         if not myfn.__name__ != "<lambda>":
             raise ValueError(mess)
         mess = "constraint strings are not bound to same constraint"
-        if not arg1.fn.__name__ == arg2.fn.__name__:
+        if not arg1.fn.__code__ == arg2.fn.__code__:
             raise ValueError(mess)
 
     @classmethod
@@ -499,7 +499,7 @@ class ContainerMaker:
             raise ValueError(mess)
 
     @classmethod
-    def nested_pair_init_check_proc(csl, arg1, arg2):
+    def nested_pair_init_check_proc(cls, arg1, arg2):
         cls.pair_init_check_proc(arg1, arg2, ConstantString, Pair)
 
     @classmethod
@@ -524,7 +524,7 @@ class ContainerMaker:
     @classmethod
     def single_constraint_tuple_init_check_proc(cls, els):
         cls.tuple_init_check_proc(els, frozenset, ConstraintString)
-        fncs = set([s.fn.__name__ for s in els])
+        fncs = set([s.fn.__code__ for s in els])
         if not len(fncs) == 1:
             raise ValueError("More than one constraint exist among member strings")
         fncs = list(fncs)
@@ -535,7 +535,7 @@ class ContainerMaker:
     @classmethod
     def non_numeric_tuple_init_check_proc(cls, els):
         cls.tuple_init_check_proc(els, frozenset, NonNumericString)
-        fncs = set([s.fn.__name__ for s in els])
+        fncs = set([s.fn.__code__ for s in els])
         if not len(fncs) == 1:
             raise ValueError("More than one constraint exist for members")
         fncs = list(fncs)
@@ -554,7 +554,7 @@ class ContainerMaker:
     @classmethod
     def uniform_pair_tuple_init_check_proc(cls, els):
         cls.tuple_init_check_proc(els, frozenset, SingleConstraintPair)
-        fncs = set([p.arg1.fn.__name__ for p in els])
+        fncs = set([p.arg1.fn.__code__ for p in els])
         if not len(fncs) == 1:
             raise ValueError("More than one constraint exist for members")
         fncs = list(fncs)
@@ -577,13 +577,15 @@ class ContainerMaker:
     @classmethod
     def uniform_constraint_mixed_pair_init_check_proc(cls, arg1, arg2):
         cls.pair_init_check_proc(arg1, arg2, ConstraintString, SingleConstraintTuple)
-        fncs = set([p.fn.__name__ for p in arg2])
-        fncs.add(str1.fn.__name__)
+        fncs = set([p.fn.__code__ for p in arg2])
+        fncs.add(arg1.fn.__code__)
         if not len(fncs) == 1:
             raise ValueError("More than one constraint exist for members")
         fncs = list(fncs)
         fnc = fncs[0]
-        if not fnc != "<lambda>":
+        fnames = set([p.fn.__name__ for p in arg2])
+        fnames.add(arg1.fn.__name__)
+        if "<lambda>" in fnames:
             raise ValueError("Anonymous functions are not allowed")
 
     @classmethod
@@ -593,13 +595,15 @@ class ContainerMaker:
     @classmethod
     def uniform_non_numeric_mixed_pair_init_check_proc(cls, arg1, arg2):
         cls.pair_init_check_proc(arg1, arg2, NonNumericString, SingleConstraintTuple)
-        fncs = set([p.fn.__name__ for p in arg2])
-        fncs.add(arg1.fn.__name__)
+        fncs = set([p.fn.__code__ for p in arg2])
+        fncs.add(arg1.fn.__code__)
         if not len(fncs) == 1:
             raise ValueError("More than one constraint exist for members")
         fncs = list(fncs)
         fnc = fncs[0]
-        if not fnc != "<lambda>":
+        fnames = set([p.fn.__name__ for p in arg2])
+        fnames.add(arg1.fn.__name__)
+        if "<lambda>" in fnames:
             raise ValueError("Anonymous functions are not allowed")
 
     @classmethod
@@ -817,17 +821,17 @@ class ContainerMaker:
             return self.make_single_pair_tuple(**kwargs)
         elif choice == "uniform pair tuple":
             return self.make_uniform_pair_tuple(**kwargs)
-        elif objname == "mixed pair":
+        elif choice == "mixed pair":
             return self.make_mixed_pair(**kwargs)
-        elif objname == "constraint mixed pair":
+        elif choice == "constraint mixed pair":
             return self.make_constraint_mixed_pair(**kwargs)
-        elif objname == "single constraint mixed pair":
+        elif choice == "single constraint mixed pair":
             return self.make_single_constraint_mixed_pair(**kwargs)
-        elif objname == "uniform mixed pair":
+        elif choice == "uniform mixed pair":
             return self.make_uniform_mixed_pair(**kwargs)
-        elif objname == "non numeric mixed pair":
+        elif choice == "non numeric mixed pair":
             return self.make_non_numeric_mixed_pair(**kwargs)
-        elif objname == "uniform non numeric mixed pair":
+        elif choice == "uniform non numeric mixed pair":
             return self.make_uniform_non_numeric_mixed_pair(**kwargs)
         else:
             raise ValueError("Unknown choice: " + choice)

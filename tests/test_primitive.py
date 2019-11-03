@@ -27,6 +27,59 @@ class TestPrimitive(unittest.TestCase):
             check = True
         self.assertEqual(check, True)
 
+    def test_primitive_maker_from_type(self):
+        "test making object from type"
+        pmaker = PrimitiveMaker
+        check = False
+        try:
+            pmaker.from_type(int, mystr=252)
+        except ValueError:
+            check = True
+        self.assertTrue(check)
+        check = True
+        try:
+            pmaker.from_type(ConstantString, mystr="here is a string")
+        except TypeError or ValueError:
+            check = False
+        self.assertTrue(check)
+        check = False
+        try:
+            pmaker.from_type(ConstraintString, mystr="here is a string")
+        except TypeError:
+            check = True
+        self.assertTrue(check)
+        check = True
+        try:
+            mystr = pmaker.from_type(ConstantString, mystr="a str")
+
+            def lfn(x):
+                return x.constr.islower()
+
+            pmaker.from_type(ConstraintString, mystr=mystr, fnc=lfn)
+        except TypeError:
+            check = True
+        self.assertTrue(check)
+
+    def test_primitive_maker_from_str(self):
+        pmaker = PrimitiveMaker("constant string")
+        cmaker = PrimitiveMaker("constraint string")
+        check = True
+        try:
+            constr = pmaker.from_string(mystr="a str")
+        except ValueError or TypeError:
+            check = False
+        self.assertTrue(check)
+
+        def lfn(x):
+            return x.constr.islower()
+
+        check = True
+        try:
+            constr = cmaker.from_string(mystr="another str", fnc=lfn)
+        except ValueError or TypeError:
+            check = False
+        self.assertTrue(check)
+
     def test_primitive_maker_constant_string(self):
         pmaker = PrimitiveMaker("char")
         check = False

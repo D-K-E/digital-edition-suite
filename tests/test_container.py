@@ -36,12 +36,13 @@ class TestContainer(unittest.TestCase):
         self.currentdir = os.path.abspath(os.curdir)
         self.testdir = os.path.join(self.currentdir, "tests")
         self.assetdir = os.path.join(self.testdir, "assets")
+        self.consMaker = PrimitiveMaker("constant string")
+        self.constrMaker = PrimitiveMaker("constraint string")
 
     def test_pair(self):
         pmaker = ContainerMaker("pair")
-        cmaker = PrimitiveMaker("constant string")
-        mystr1 = cmaker.make(mystr="mystr1")
-        mystr2 = cmaker.make(mystr="mystr2")
+        mystr1 = self.consMaker.make(mystr="mystr1")
+        mystr2 = self.consMaker.make(mystr="mystr2")
         pair = pmaker.make(arg1=mystr1, arg2=mystr2)
         cmpiter = set([mystr1, mystr2])
         piter = set([p for p in pair])
@@ -50,7 +51,7 @@ class TestContainer(unittest.TestCase):
         check = False
         try:
             pmaker.make(arg1=1, arg2="mystr2")
-        except AssertionError:
+        except TypeError:
             check = True
         self.assertEqual(True, check)
 
@@ -61,231 +62,307 @@ class TestContainer(unittest.TestCase):
         def nonlfn(x: ConstantString):
             return not x.constr.islower()
 
-        pmaker = PrimitiveMaker("constraint string")
-        pcmaker = PrimitiveMaker("constant string")
-        cstr1 = pcmaker.make(mystr="my true string")
-        cstr2 = pcmaker.make(mystr="my another true string")
-        mystr1 = pmaker.make(mystr=cstr1, fnc=lfn)
-        mystr2 = pmaker.make(mystr=cstr2, fnc=lfn)
+        pmaker = PrimitiveMaker(choice="constraint string")
+        pcmaker = PrimitiveMaker(choice="constant string")
+        cstr1 = self.consMaker.make(mystr="my true string")
+        cstr2 = self.consMaker.make(mystr="my another true string")
+        mystr1 = self.constrMaker.make(mystr=cstr1, fnc=lfn)
+        mystr2 = self.constrMaker.make(mystr=cstr2, fnc=lfn)
         cmaker = ContainerMaker("single constraint pair")
         check = True
         try:
             scpair1 = cmaker.make(arg1=mystr1, arg2=mystr2)
-        except AssertionError:
+        except ValueError:
             check = False
         self.assertEqual(True, check)
 
+    def test_double_constraint_pair(self):
+        def lfn(x: ConstantString):
+            return x.constr.islower()
 
-#   def test_double_constraint_pair(self):
-#       def lfn(x: str):
-#           return x.islower()
+        def nonlfn(x: ConstantString):
+            return not x.constr.islower()
 
-#       def nonlfn(x: str):
-#           return not x.islower()
+        mystr1 = self.constrMaker.from_string(mystr="my true string", fnc=lfn)
+        mystr2 = self.constrMaker.from_string(mystr="my another true string", fnc=lfn)
+        mystr3 = self.constrMaker.from_string(mystr="My False String", fnc=nonlfn)
+        mystr4 = self.constrMaker.from_string(mystr="my another true string", fnc=lfn)
+        scpair1 = DoubleConstraintPair(arg1=mystr1, arg2=mystr3)
+        self.assertEqual(True, scpair1.isValid())
 
-#       mystr1 = ConstraintString("my true string", lfn)
-#       mystr2 = ConstraintString("my another true string", lfn)
-#       mystr3 = ConstraintString("My False String", nonlfn)
-#       mystr4 = ConstraintString("my another true string", nonlfn)
-#       scpair1 = DoubleConstraintPair(str1=mystr1, str2=mystr3)
-#       scpair2 = DoubleConstraintPair(str1=mystr2, str2=mystr4)
-#       self.assertEqual(True, scpair1.isValid())
-#       self.assertEqual(False, scpair2.isValid())
+    def test_nested_pair(self):
+        pmaker = ContainerMaker("nested pair")
+        cstr1 = self.consMaker.make(mystr="mystr1")
+        cstr2 = self.consMaker.make(mystr="mystr2")
+        pair = Pair(cstr1, cstr2)
+        cstr3 = self.consMaker.make(mystr="my simple string")
+        check = True
+        try:
+            npair = pmaker.make(arg1=cstr3, arg2=pair)
+        except TypeError or ValueError:
+            check = False
+        self.assertEqual(True, check)
 
-#   def test_nested_pair(self):
-#       pair = Pair("mystr1", "mystr2")
-#       npair = NestedPair("my simple string", pair)
-#       self.assertEqual(True, npair.isValid())
-#       check = False
-#       try:
-#           NestedPair(123, pair)
-#       except AssertionError:
-#           check = True
-#       self.assertEqual(True, check)
+    def test_constraint_nested_pair(self):
+        ""
+        pmaker = ContainerMaker("constraint nested pair")
 
-#   def test_constraint_nested_pair(self):
-#       ""
+        def lfn(x: ConstantString):
+            return x.constr.islower()
 
-#       def lfn(x: str):
-#           return x.islower()
+        mystr1 = self.constrMaker.from_string(mystr="my true string", fnc=lfn)
+        m1 = self.consMaker.from_string(mystr="mystr1")
+        m2 = self.consMaker.from_string(mystr="mystr2")
+        pair = Pair(m1, m2)
+        check = True
+        try:
+            npair = pmaker.make(arg1=mystr1, arg2=pair)
+        except ValueError:
+            check = False
+        self.assertEqual(True, check)
 
-#       mystr1 = ConstraintString("my true string", lfn)
-#       pair = Pair("mystr1", "mystr2")
-#       npair = ConstraintNestedPair(mystr1, pair)
-#       self.assertEqual(True, npair.isValid())
-#       mystr2 = ConstraintString("My True string", lfn)
-#       mpair = ConstraintNestedPair(mystr2, pair)
-#       self.assertEqual(False, mpair.isValid())
+    def test_constraint_nested_single_constraint_pair(self):
+        def lfn(x: ConstantString):
+            return x.constr.islower()
 
-#   def test_constraint_nested_single_constraint_pair(self):
-#       def lfn(x: str):
-#           return x.islower()
+        def nonlfn(x: ConstantString):
+            return not x.constr.islower()
 
-#       def nonlfn(x: str):
-#           return not x.islower()
+        pmaker = ContainerMaker("single constraint pair")
+        pmaker2 = ContainerMaker("constraint nested single constraint pair")
+        mystr1 = self.constrMaker.from_string(mystr="my true string", fnc=lfn)
+        mystr2 = self.constrMaker.from_string(mystr="my another true string", fnc=lfn)
+        mystr4 = self.constrMaker.from_string(mystr="my True string", fnc=nonlfn)
+        scpair1 = pmaker.make(arg1=mystr1, arg2=mystr2)
+        check = True
+        try:
+            cnscp1 = pmaker2.make(arg1=mystr4, arg2=scpair1)
+        except ValueError:
+            check = False
+        self.assertEqual(True, check)
 
-#       mystr1 = ConstraintString("my true string", lfn)
-#       mystr2 = ConstraintString("my another true string", lfn)
-#       mystr3 = ConstraintString("my false string", nonlfn)
-#       mystr4 = ConstraintString("my True string", nonlfn)
-#       scpair1 = SingleConstraintPair(str1=mystr1, str2=mystr2)
-#       scpair2 = SingleConstraintPair(str1=mystr4, str2=mystr3)
-#       cnscp1 = ConstraintNestedSingleConstraintPair(mystr4, scpair1)
-#       cnscp2 = ConstraintNestedSingleConstraintPair(mystr3, scpair2)
-#       self.assertEqual(True, cnscp1.isValid())
-#       self.assertEqual(False, cnscp2.isValid())
+    def test_string_tuple(self):
+        cmaker = ContainerMaker("tuple")
+        pmaker = PrimitiveMaker(choice="constant string")
+        mset1 = set(
+            [
+                pmaker.from_string(mystr="m1"),
+                pmaker.from_string(mystr="m2"),
+                pmaker.from_string(mystr="m3"),
+            ]
+        )
+        mset1 = frozenset(mset1)
+        check = True
+        try:
+            tpl1 = cmaker.make(els=mset1)
+        except ValueError:
+            check = False
+        self.assertEqual(True, check)
 
-#   def test_string_tuple(self):
-#       mset1 = set(["m1", "m2", "m3"])
-#       mset1 = frozenset(mset1)
-#       mset2 = set([1, "m2", "m3"])
-#       mset2 = frozenset(mset2)
-#       tpl1 = StringTuple(mset1)
-#       check = False
-#       try:
-#           StringTuple(mset2)
-#       except AssertionError:
-#           check = True
-#       self.assertEqual(True, tpl1.isValid())
-#       self.assertEqual(True, check)
+    def test_single_constraint_tuple(self):
+        cmaker = ContainerMaker("single constraint tuple")
+        pmaker = PrimitiveMaker(choice="constraint string")
 
-#   def test_single_constraint_tuple(self):
-#       def lfn(x: str):
-#           return x.islower()
+        def lfn(x: ConstantString):
+            return x.constr.islower()
 
-#       def nonlfn(x: str):
-#           return not x.islower()
+        def nonlfn(x: ConstantString):
+            return not x.constr.islower()
 
-#       mystr1 = ConstraintString("my true string", lfn)
-#       mystr2 = ConstraintString("my another true string", lfn)
-#       mystr3 = ConstraintString("my false string", nonlfn)
-#       mset1 = set([mystr1, mystr2, mystr3])
-#       mset1 = frozenset(mset1)
-#       mset2 = set([mystr1, mystr2])
-#       mset2 = frozenset(mset2)
-#       tpl2 = SingleConstraintTuple(mset2)
-#       check = False
-#       try:
-#           SingleConstraintTuple(mset1)
-#       except AssertionError:
-#           check = True
-#       self.assertEqual(True, tpl2.isValid())
-#       self.assertEqual(True, check)
+        mystr1 = pmaker.from_string(mystr="my true string", fnc=lfn)
+        mystr2 = pmaker.from_string(mystr="my another true string", fnc=lfn)
+        mset1 = set([mystr1, mystr2])
+        mset1 = frozenset(mset1)
+        check = True
+        try:
+            tpl = cmaker.make(els=mset1)
+        except TypeError or ValueError:
+            check = False
+        self.assertEqual(True, check)
+        mset1 = set(mset1)
+        check = True
+        try:
+            tpl = cmaker.make(els=mset1)
+        except TypeError or ValueError:
+            check = False
+        self.assertEqual(False, check)
 
-#   def test_non_numeric_tuple(self):
-#       mystr1 = NonNumericString("my true string")
-#       mystr2 = NonNumericString("my another true string")
-#       mystr3 = NonNumericString("my false string")
-#       mset1 = set([mystr1, mystr2, mystr3])
-#       mset1 = frozenset(mset1)
-#       tpl2 = NonNumericTuple(mset1)
-#       self.assertEqual(True, tpl2.isValid())
+    def test_non_numeric_tuple(self):
+        pmaker = PrimitiveMaker(choice="non numeric string")
+        cmaker = ContainerMaker("non numeric tuple")
+        mystr1 = pmaker.from_string(mystr="my true string")
+        mystr2 = pmaker.from_string(mystr="my another true string")
+        mystr3 = pmaker.from_string(mystr="my false string")
+        mset1 = set([mystr1, mystr2, mystr3])
+        mset1 = frozenset(mset1)
+        check = True
+        try:
+            tpl2 = cmaker.make(els=mset1)
+        except ValueError or TypeError:
+            check = False
+        self.assertEqual(True, check)
 
-#   def test_pair_tuple(self):
-#       pair1 = Pair("mystr1", "mystr2")
-#       pair2 = Pair("mystr3", "mystr4")
-#       pair3 = Pair("mystr5", "mystr6")
-#       mset = frozenset([pair1, pair2, pair3])
-#       ptpl = PairTuple(mset)
-#       self.assertEqual(True, ptpl.isValid())
+    def test_pair_tuple(self):
+        pmaker = PrimitiveMaker(choice="constant string")
+        cmaker = ContainerMaker("pair")
+        cmaker2 = ContainerMaker("pair tuple")
 
-#   def test_single_pair_tuple(self):
-#       def lfn(x: str):
-#           return x.islower()
+        pair1 = cmaker.make(
+            arg1=pmaker.make(mystr="mystr1"), arg2=pmaker.make(mystr="mystr2")
+        )
+        pair2 = cmaker.make(
+            arg1=pmaker.make(mystr="mystr3"), arg2=pmaker.make(mystr="mystr4")
+        )
+        pair3 = cmaker.make(
+            arg1=pmaker.make(mystr="mystr5"), arg2=pmaker.make(mystr="mystr6")
+        )
+        mset = frozenset([pair1, pair2, pair3])
+        check = True
+        try:
+            ptpl = cmaker2.make(els=mset)
+        except TypeError or ValueError:
+            check = False
+        self.assertEqual(True, check)
 
-#       def nonlfn(x: str):
-#           return not x.islower()
+    def test_single_pair_tuple(self):
+        pmaker = PrimitiveMaker(choice="constraint string")
+        cmaker = ContainerMaker("single constraint pair")
+        cmaker2 = ContainerMaker("single pair tuple")
 
-#       mystr1 = ConstraintString("my true string", lfn)
-#       mystr2 = ConstraintString("my another true string", lfn)
-#       mystr3 = ConstraintString("My False String", nonlfn)
-#       mystr4 = ConstraintString("my Another true string", nonlfn)
-#       scpair1 = SingleConstraintPair(str1=mystr1, str2=mystr2)
-#       scpair2 = SingleConstraintPair(str1=mystr3, str2=mystr4)
-#       mset = frozenset([scpair1, scpair2])
-#       ptpl = SinglePairTuple(mset)
-#       self.assertEqual(True, ptpl.isValid())
+        def lfn(x: ConstantString):
+            return x.constr.islower()
 
-#   def test_uniform_pair_tuple(self):
-#       def lfn(x: str):
-#           return x.islower()
+        def nonlfn(x: ConstantString):
+            return not x.constr.islower()
 
-#       mystr1 = ConstraintString("my true string", lfn)
-#       mystr2 = ConstraintString("my another true string", lfn)
-#       mystr3 = ConstraintString("my another 2 true string", lfn)
-#       mystr4 = ConstraintString("my another 3 true string", lfn)
-#       scpair1 = SingleConstraintPair(str1=mystr1, str2=mystr2)
-#       scpair2 = SingleConstraintPair(str1=mystr3, str2=mystr4)
-#       mset = frozenset([scpair1, scpair2])
-#       tpl = UniformPairTuple(mset)
-#       self.assertEqual(True, tpl.isValid())
+        mystr1 = pmaker.from_string(mystr="my true string", fnc=lfn)
+        mystr2 = pmaker.from_string(mystr="my another true string", fnc=lfn)
+        mystr3 = pmaker.from_string(mystr="My False String", fnc=nonlfn)
+        mystr4 = pmaker.from_string(mystr="my Another true string", fnc=nonlfn)
+        scpair1 = cmaker.make(arg1=mystr1, arg2=mystr2)
+        scpair2 = cmaker.make(arg1=mystr3, arg2=mystr4)
+        mset = frozenset([scpair1, scpair2])
+        check = True
+        try:
+            ptpl = cmaker2.make(els=mset)
+        except TypeError or ValueError:
+            check = False
+        self.assertEqual(True, check)
 
-#   def test_mixed_pair(self):
-#       def lfn(x: str):
-#           return x.islower()
+    def test_uniform_pair_tuple(self):
+        pmaker = PrimitiveMaker(choice="constraint string")
+        cmaker = ContainerMaker("single constraint pair")
+        cmaker2 = ContainerMaker("uniform pair tuple")
 
-#       mset1 = set(["m1", "m2", "m3"])
-#       mset1 = frozenset(mset1)
-#       tpl1 = StringTuple(mset1)
-#       mystr1 = ConstraintString("my true string", lfn)
-#       mpair = MixedPair(mystr1, tpl1)
-#       self.assertEqual(True, mpair.isValid())
+        def lfn(x: ConstantString):
+            return x.constr.islower()
 
-#   def test_single_constraint_mixed_pair(self):
-#       def lfn(x: str):
-#           return x.islower()
+        mystr1 = pmaker.from_string(mystr="my true string", fnc=lfn)
+        mystr2 = pmaker.from_string("my another true string", fnc=lfn)
+        mystr3 = pmaker.from_string("my another 2 true string", fnc=lfn)
+        mystr4 = pmaker.from_string("my another 3 true string", fnc=lfn)
+        scpair1 = cmaker.make(arg1=mystr1, arg2=mystr2)
+        scpair2 = cmaker.make(arg1=mystr3, arg2=mystr4)
+        mset = frozenset([scpair1, scpair2])
+        check = True
+        try:
+            tpl = cmaker2.make(els=mset)
+        except TypeError or ValueError:
+            check = False
+        self.assertEqual(True, check)
 
-#       def nonlfn(x: str):
-#           return not x.islower()
+    def test_mixed_pair(self):
+        pmaker = PrimitiveMaker("constant string")
+        pmaker2 = PrimitiveMaker("constraint string")
+        cmaker = ContainerMaker("tuple")
+        cmaker2 = ContainerMaker("mixed pair")
 
-#       mystr1 = ConstraintString("my true string", lfn)
-#       mystr2 = ConstraintString("my another true string", lfn)
-#       mystr3 = ConstraintString("my False string", nonlfn)
-#       mystr4 = ConstraintString("my false string", nonlfn)
-#       mset2 = set([mystr1, mystr2])
-#       mset2 = frozenset(mset2)
-#       tpl2 = SingleConstraintTuple(mset2)
-#       spair1 = SingleConstraintMixedPair(mystr3, tpl2)
-#       spair2 = SingleConstraintMixedPair(mystr4, tpl2)
-#       self.assertEqual(True, spair1.isValid())
-#       self.assertEqual(False, spair2.isValid())
+        def lfn(x: ConstantString):
+            return x.constr.islower()
 
-#   def test_uniform_mixed_pair(self):
-#       def lfn(x: str):
-#           return x.islower()
+        mset1 = set(
+            [pmaker.make(mystr="m1"), pmaker.make(mystr="m2"), pmaker.make(mystr="m3")]
+        )
+        mset1 = frozenset(mset1)
+        tpl1 = cmaker.make(els=mset1)
+        mystr1 = pmaker.make(mystr="my true string")
+        check = True
+        try:
+            mpair = cmaker2.make(arg1=mystr1, arg2=tpl1)
+        except TypeError or ValueError:
+            check = False
+        self.assertEqual(True, check)
 
-#       def nonlfn(x: str):
-#           return not x.islower()
+    def test_single_constraint_mixed_pair(self):
+        pmaker = PrimitiveMaker(choice="constraint string")
+        cmaker = ContainerMaker("single constraint tuple")
+        cmaker2 = ContainerMaker("single constraint mixed pair")
 
-#       mystr1 = ConstraintString("my true string", lfn)
-#       mystr2 = ConstraintString("my another true string", lfn)
-#       mystr3 = ConstraintString("my another true string 2", lfn)
-#       mystr4 = ConstraintString("my false string", nonlfn)
-#       mset2 = set([mystr1, mystr2])
-#       mset2 = frozenset(mset2)
-#       tpl2 = SingleConstraintTuple(mset2)
-#       spair1 = UniformMixedPair(str1=mystr3, strset=tpl2)
-#       self.assertEqual(True, spair1.isValid())
-#       check = False
-#       try:
-#           UniformMixedPair(str1=mystr4, strset=tpl2)
-#       except AssertionError:
-#           check = True
-#       self.assertEqual(True, check)
+        def lfn(x: ConstantString):
+            return x.constr.islower()
 
-#   def test_non_numeric_mixed_pair(self):
-#       def lfn(x: str):
-#           return x.islower()
+        def nonlfn(x: ConstantString):
+            return not x.constr.islower()
 
-#       mystr1 = ConstraintString("my true string", lfn)
-#       mystr2 = ConstraintString("my another true string", lfn)
-#       mystr3 = ConstraintString("my another true string 2", lfn)
-#       myn1 = NonNumericString("my non numeric")
-#       mset2 = set([mystr1, mystr2, mystr3])
-#       mset2 = frozenset(mset2)
-#       tpl2 = SingleConstraintTuple(mset2)
-#       nnpair = NonNumericMixedPair(myn1, tpl2)
-#       self.assertEqual(True, nnpair.isValid())
+        mystr1 = pmaker.from_string(mystr="my true string", fnc=lfn)
+        mystr2 = pmaker.from_string(mystr="my another true string", fnc=lfn)
+        mystr3 = pmaker.from_string(mystr="my False string", fnc=nonlfn)
+        mset2 = set([mystr1, mystr2])
+        mset2 = frozenset(mset2)
+        tpl2 = cmaker.make(els=mset2)
+        check = True
+        try:
+            spair1 = cmaker2.make(arg1=mystr3, arg2=tpl2)
+        except TypeError or ValueError:
+            check = False
+        self.assertEqual(True, check)
+
+    def test_uniform_mixed_pair(self):
+        pmaker = PrimitiveMaker(choice="constraint string")
+        cmaker = ContainerMaker("single constraint tuple")
+
+        def lfn(x: ConstantString):
+            return x.constr.islower()
+
+        def nonlfn(x: ConstantString):
+            return not x.constr.islower()
+
+        mystr1 = pmaker.from_string(mystr="my true string", fnc=lfn)
+        mystr2 = pmaker.from_string(mystr="my another true string", fnc=lfn)
+        mystr3 = pmaker.from_string(mystr="my another true string 2", fnc=lfn)
+        mset2 = set([mystr1, mystr2])
+        mset2 = frozenset(mset2)
+        tpl2 = cmaker.make(els=mset2)
+        cmaker2 = ContainerMaker("uniform mixed pair")
+        check = True
+        try:
+            spair1 = cmaker2.make(arg1=mystr3, arg2=tpl2)
+        except TypeError or ValueError:
+            check = False
+        self.assertEqual(True, check)
+
+    def test_non_numeric_mixed_pair(self):
+        pmaker = PrimitiveMaker(choice="constraint string")
+        pmaker2 = PrimitiveMaker(choice="non numeric string")
+        cmaker = ContainerMaker("single constraint tuple")
+        cmaker2 = ContainerMaker("non numeric mixed pair")
+
+        def lfn(x: ConstantString):
+            return x.constr.islower()
+
+        mystr1 = pmaker.from_string(mystr="my true string", fnc=lfn)
+        mystr2 = pmaker.from_string(mystr="my another true string", fnc=lfn)
+        mystr3 = pmaker.from_string(mystr="my another true string 2", fnc=lfn)
+        myn1 = pmaker2.from_string(mystr="my non numeric")
+        mset2 = set([mystr1, mystr2, mystr3])
+        mset2 = frozenset(mset2)
+        tpl2 = cmaker.make(els=mset2)
+        check = True
+        try:
+            nnpair = cmaker2.make(arg1=myn1, arg2=tpl2)
+        except TypeError or ValueError:
+            check = False
+        self.assertEqual(True, check)
 
 
 if __name__ == "__main__":

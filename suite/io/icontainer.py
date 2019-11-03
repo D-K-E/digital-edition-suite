@@ -5,6 +5,7 @@
 from suite.dtype.primitive import ConstraintString
 from suite.dtype.primitive import NonNumericString
 from suite.dtype.primitive import ConstantString
+from suite.dtype.primitive import PrimitiveMaker
 
 from suite.dtype.container import BasePair, BaseTuple
 from suite.dtype.container import Pair, SingleConstraintPair
@@ -22,6 +23,7 @@ from suite.dtype.container import SingleConstraintMixedPair
 from suite.dtype.container import UniformMixedPair
 from suite.dtype.container import NonNumericMixedPair
 from suite.dtype.container import UniformNonNumericMixedPair
+from suite.dtype.container import ContainerMaker
 
 from suite.io.iprimitive import ConstraintStringIo
 from suite.io.iprimitive import NonNumericStringIo

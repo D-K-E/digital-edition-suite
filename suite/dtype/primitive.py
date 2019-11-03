@@ -212,6 +212,24 @@ class PrimitiveMaker:
         else:
             raise ValueError("Unknown primitive choice: " + choice)
 
+    def from_string(self, mystr: str, **kwargs):
+        "make object from choice using string"
+        choice = self.choice.lower()
+        mess = "Incompatible type: " + type(mystr).__name__
+        mess += ". Only str type is allowed"
+        if not isinstance(mystr, str):
+            raise TypeError(mess)
+        if choice == "constant string":
+            return self.make_constant_string(mystr)
+        elif choice == "constraint string":
+            cstr = self.make_constant_string(mystr)
+            return self.make_constraint_string(mystr=cstr, **kwargs)
+        elif choice == "non numeric string":
+            cstr = self.make_constant_string(mystr)
+            return self.make_non_numeric_string(mystr=cstr)
+        else:
+            raise ValueError("Unknown primitive choice: " + choice)
+
     @classmethod
     def from_type(cls, primitiveType, **kwargs):
         "make primitive from giving its type"
