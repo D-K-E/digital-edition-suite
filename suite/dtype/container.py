@@ -63,10 +63,6 @@ class Pair(BasePair, PairBase):
         return hash(tuple(items))
 
 
-def single_constraint_pair_check_pair(arg1, arg2, arg1type, arg2type):
-    pair_init_check_proc(arg1, arg2, arg1type, arg2type)
-
-
 class SingleConstraintPairBase(NamedTuple):
     arg1: ConstraintString
     arg2: ConstraintString
@@ -84,10 +80,6 @@ class SingleConstraintPair(BasePair, SingleConstraintPairBase):
         items = list(self.__dict__.items())
         items.sort()
         return hash(tuple(items))
-
-
-def double_constraint_pair_init_check_proc(arg1, arg2, arg1type, arg2type):
-    pair_init_check_proc(arg1, arg2, arg1type, arg2type)
 
 
 class DoubleConstraintPairBase(NamedTuple):
@@ -134,10 +126,6 @@ class NestedPair(BasePair, NestedPairBase):
         items = list(self.__dict__.items())
         items.sort()
         return hash(tuple(items))
-
-
-def constraint_nested_pair_check_proc(arg1, arg2, arg1type, arg2type):
-    pair_init_check_proc(arg1, arg2, arg1type, arg2type)
 
 
 class ConstraintNestedPairBase(NamedTuple):

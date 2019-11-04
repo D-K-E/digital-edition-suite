@@ -14,16 +14,28 @@ import pickle
 import dill
 
 
-class PrimitiveIo:
+class _PrimitiveIo:
     "Base class for all primitive io"
 
     def __init__(self, primitive, primitiveType, classNameSep="-"):
-        assert isinstance(primitive, primitiveType)
+        if not isinstance(primitive, primitiveType):
+            raise TypeError(
+                "Given primitive type is: "
+                + primitive.__class_.__name__
+                + " it must be: "
+                + primitiveType.__name__
+            )
         self.primitive = primitive
         self.primitiveType = primitiveType
 
+    @classmethod
+    def check_value_error(cls, objval: str, wantedVal: str, messPrefix: str):
+        if objval != wantedVal:
+            raise ValueError(messPrefix + objval + " it must be: " + wantedVal)
+        return
 
-class PrimitiveXmlIo(PrimitiveIo):
+
+class _PrimitiveXmlIo(_PrimitiveIo):
     "io primitive in xml format"
 
     def __init__(self, primitive, primitiveType):
@@ -40,7 +52,7 @@ class PrimitiveXmlIo(PrimitiveIo):
         return "Xml Io for primitive: " + str(self.primitive)
 
 
-class PrimitiveJsonIo(PrimitiveIo):
+class _PrimitiveJsonIo(_PrimitiveIo):
     "Io Primitive in json format"
 
     def __init__(self, primitive, primitiveType):
@@ -64,7 +76,7 @@ class PrimitiveJsonIo(PrimitiveIo):
         return "Json Renderer for primitive: " + str(self.primitive)
 
 
-class PrimitiveIoBuilder:
+class _PrimitiveIoBuilder:
     "Base Io builder for available primitive io objects"
     SUPPORTED = ["xml", "json"]
 
@@ -87,15 +99,16 @@ class PrimitiveIoBuilder:
             )
 
 
-class ConstantStringIo(PrimitiveIoBuilder):
+class ConstantStringIo(_PrimitiveIoBuilder):
     "Io builder for constant string primitive"
 
     def __init__(self, mystr: ConstantString):
         super().__init__()
-        assert mystr.isValid()
+        if not mystr.isValid():
+            raise ValueError("Given ConstantString: " + str(mystr) + " is not valid")
         self.constr = mystr
 
-    class XmlIo(PrimitiveXmlIo):
+    class XmlIo(_PrimitiveXmlIo):
         def __init__(self, mystr: ConstantString):
             super().__init__(mystr, ConstantString)
 
@@ -109,13 +122,18 @@ class ConstantStringIo(PrimitiveIoBuilder):
         @classmethod
         def from_element(cls, el: etree.Element) -> ConstantString:
             "from element"
-            assert el.get("class") == "ConstantString"
+            elclass = el.get("class")
+            cls.check_value_error(
+                objval=elclass,
+                wantedVal="ConstantString",
+                messPrefix="Given tag class: ",
+            )
             elstr = el.text
             maker = PrimitiveMaker("constant string")
             constr = maker.make(mystr=elstr)
             return constr
 
-    class JsonIo(PrimitiveJsonIo):
+    class JsonIo(_PrimitiveJsonIo):
         def __init__(self, mystr: ConstantString):
             super().__init__(mystr, ConstantString)
 
@@ -130,8 +148,14 @@ class ConstantStringIo(PrimitiveIoBuilder):
         @classmethod
         def from_dict(cls, cdict: dict) -> ConstantString:
             "render constant string from dict"
-            assert cdict["class"] == "ConstantString"
-            assert cdict["type"] == "primitive"
+            objtype = cdict.get("type", "")
+            objclass = cdict.get("class", "")
+            cls.check_value_error(
+                objtype, "primitive", messPrefix="Given object type: "
+            )
+            cls.check_value_error(
+                objclass, "ConstantString", messPrefix="Given object class: "
+            )
             maker = PrimitiveMaker("constant string")
             constr = maker.make(mystr=cdict["value"])
             return constr
@@ -150,15 +174,16 @@ class ConstantStringIo(PrimitiveIoBuilder):
         return "Io builder for: " + repr(self.constr)
 
 
-class ConstraintStringIo(PrimitiveIoBuilder):
+class ConstraintStringIo(_PrimitiveIoBuilder):
     "Io for a constraint string in given format"
     SUPPORTED = ["xml", "json"]
 
     def __init__(self, cstr: ConstraintString):
-        assert cstr.isValid()
+        if not cstr.isValid():
+            raise ValueError("Constraint string: " + str(cstr) + "is not valid")
         self.cstr = cstr
 
-    class XmlIo(PrimitiveXmlIo):
+    class XmlIo(_PrimitiveXmlIo):
         "Io Constraint String as Xml"
 
         def __init__(self, cstr: ConstraintString):
@@ -182,8 +207,11 @@ class ConstraintStringIo(PrimitiveIoBuilder):
         @classmethod
         def from_element(cls, element: etree.Element):
             ""
-            assert element.get("class") == "ConstraintString"
-            assert element.tag == "primitive"
+            elclass = element.get("class")
+            eltag = element.tag
+            cls.check_value_error(elclass, "ConstraintString", "Given element class: ")
+            cls.check_value_error(eltag, "primitive", "Given element tag: ")
+
             myfn = bytes.fromhex(element.get("constraint"))
             myfn = dill.loads(myfn)
             cstr = element.text
@@ -191,7 +219,7 @@ class ConstraintStringIo(PrimitiveIoBuilder):
             maker = PrimitiveMaker("constraint string")
             return maker.make(mystr=constr, fnc=myfn)
 
-    class JsonIo(PrimitiveJsonIo):
+    class JsonIo(_PrimitiveJsonIo):
         "Render Constraint String as Json"
 
         def __init__(self, cstr: ConstraintString):
@@ -226,8 +254,10 @@ class ConstraintStringIo(PrimitiveIoBuilder):
         @classmethod
         def from_dict(cls, cdict: dict) -> ConstraintString:
             "transform dict to ConstraintString"
-            assert cdict["class"] == "ConstraintString"
-            assert cdict["type"] == "primitive"
+            objclass = cdict.get("class", "")
+            objtype = cdict.get("type", "")
+            cls.check_value_error(objtype, "primitive", "Given object type: ")
+            cls.check_value_error(objclass, "ConstraintString", "Given object class: ")
             myfn = bytes.fromhex(cdict["constraint"])
             myfnc = dill.loads(myfn)
             constrdict = cdict["value"]
@@ -249,15 +279,17 @@ class ConstraintStringIo(PrimitiveIoBuilder):
         return "Io builder for: " + repr(self.cstr)
 
 
-class NonNumericStringIo(PrimitiveIoBuilder):
+class NonNumericStringIo(_PrimitiveIoBuilder):
     "Render a non numeric in given format"
     SUPPORTED = ["xml", "json"]
 
     def __init__(self, nnstr: NonNumericString):
+        if not nnstr.isValid():
+            raise ValueError("Given NonNumericString: " + str(nnstr) + " is not valid")
         assert nnstr.isValid()
         self.nnstr = nnstr
 
-    class XmlIo(PrimitiveXmlIo):
+    class XmlIo(_PrimitiveXmlIo):
         "Io Constraint String as Xml"
 
         def __init__(self, cstr: NonNumericString):
@@ -281,14 +313,16 @@ class NonNumericStringIo(PrimitiveIoBuilder):
         @classmethod
         def from_element(cls, element: etree.Element):
             ""
-            assert element.get("class") == "NonNumericString"
-            assert element.tag == "primitive"
+            elclass = element.get("class")
+            eltag = element.tag
+            cls.check_value_error(elclass, "NonNumericString", "Given element class: ")
+            cls.check_value_error(eltag, "primitive", "Given element tag: ")
             cstr = element.text
             constr = cls.text_to_constant_string(cstr)
             maker = PrimitiveMaker("non numeric string")
             return maker.make(mystr=constr)
 
-    class JsonIo(PrimitiveJsonIo):
+    class JsonIo(_PrimitiveJsonIo):
         "Io Constraint String as Json"
 
         def __init__(self, cstr: NonNumericString):
@@ -318,16 +352,25 @@ class NonNumericStringIo(PrimitiveIoBuilder):
             consio = ConstantStringIo
             iocls = consio.getIoClass("json")
             constr = iocls.from_dict(consdict)
-            assert constr.isValid()
+            if not constr.isValid():
+                raise ValueError("ConstantString: " + str(constr) + " is not valid")
             return constr
 
         @classmethod
         def from_json(cls, jsonstr: str):
             "construct object from json"
             objdict = json.loads(jsonstr)
-            assert objdict["class"] == "NonNumericString"
-            assert objdict["type"] == "primitive"
-            constr = cls.dict_to_constant_string(objdict["value"])
+            return cls.from_dict(objdict)
+
+        @classmethod
+        def from_dict(cls, cdict: dict):
+            "make object from given dict"
+            objclass = cdict.get("class", "")
+            objtype = cdict.get("type", "")
+            cls.check_value_error(objclass, "NonNumericString", "Given object class: ")
+            cls.check_value_error(objtype, "primitive", "Given object type: ")
+
+            constr = cls.dict_to_constant_string(cdict["value"])
             maker = PrimitiveMaker("non numeric string")
             return maker.make(mystr=constr)
 
