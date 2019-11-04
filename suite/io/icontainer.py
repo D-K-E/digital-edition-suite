@@ -69,6 +69,50 @@ class _ContainerIo:
             parent.append(member)
         return parent
 
+    def member_to_dict(self, member):
+        raise NotImplementedError
+
+    def dict_to_unit(self, mdict: dict):
+        raise NotImplementedError
+
+    def member_to_unit(self, member):
+        mdict = self.member_to_dict(member)
+        unit = self.dict_to_unit(mdict)
+        return unit
+
+    @classmethod
+    def unit_to_dict(cls, unit):
+        raise NotImplementedError
+
+    @classmethod
+    def dict_to_member(cls, mdict: dict):
+        raise NotImplementedError
+
+    @classmethod
+    def unit_to_member(cls, unit):
+        mdict = cls.unit_to_dict(unit)
+        member = cls.dict_to_member(mdict)
+        return member
+
+    @classmethod
+    def check_container_unit(cls, cunit) -> bool:
+        "check if given unit conforms to expected container"
+        raise NotImplementedError
+
+    @classmethod
+    def get_member_units_from_cunit(cls, cunit) -> list:
+        "Get members from container unit"
+        raise NotImplementedError
+
+    @classmethod
+    def get_members_from_cunit(cls, cunit, message="Invalid container unit") -> list:
+        "Get members from container unit"
+        if cls.check_container_unit(cunit):
+            member_units = cls.get_member_units_from_cunit(cunit)
+            return [cls.unit_to_member(munit) for munit in member_units]
+        else:
+            raise ValueError(message)
+
 
 class _ContainerXmlIo(_ContainerIo):
     "Container input output"
@@ -79,12 +123,19 @@ class _ContainerXmlIo(_ContainerIo):
     def member_to_element(self, member) -> etree.Element:
         raise NotImplementedError
 
+    def member_to_unit(self, member):
+        return self.member_to_element(member)
+
     def to_element(self):
         raise NotImplementedError
 
     @classmethod
     def element_to_member(cls, member: etree.Element):
         raise NotImplementedError
+
+    @classmethod
+    def unit_to_member(cls, member):
+        return cls.element_to_member(member)
 
     @classmethod
     def from_element(cls, element: etree.Element):
