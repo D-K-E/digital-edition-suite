@@ -32,6 +32,12 @@ from suite.io.iprimitive import NonNumericStringIo
 from lxml import etree
 import json
 import dill
+from typing import List, Dict
+
+
+def dict_dump(mdict: dict):
+    "dump dictionaries in homogeneous fashion"
+    return json.dumps(mdict, ensure_ascii=False, indent=2, sort_keys=True)
 
 
 class _ContainerIo:
@@ -59,118 +65,117 @@ class _ContainerIo:
 
     @classmethod
     def check_value_error(cls, objval: str, wantedVal: str, messPrefix: str):
+        "Check if given object value correspond to wanted value"
         if objval != wantedVal:
             raise ValueError(messPrefix + objval + " it must be: " + wantedVal)
         return
 
     def add_members_to_parent(self, parent, members):
-        ""
+        "add members to parent set"
         for member in members:
             parent.append(member)
         return parent
 
-    def member_to_dict(self, member):
+    def member_to_dict(self, member) -> dict:
+        "transform member to dict"
         raise NotImplementedError
 
     def dict_to_unit(self, mdict: dict):
+        "transform dictionary to given serialization unit"
         raise NotImplementedError
 
     def member_to_unit(self, member):
+        "transform member to serialization unit"
         mdict = self.member_to_dict(member)
         unit = self.dict_to_unit(mdict)
         return unit
 
     @classmethod
     def unit_to_dict(cls, unit):
+        "transform serialization unit to dictionary"
         raise NotImplementedError
 
     @classmethod
     def dict_to_member(cls, mdict: dict):
+        "transform dictionary to member type"
         raise NotImplementedError
 
     @classmethod
     def unit_to_member(cls, unit):
+        "transform serialization unit into member type"
         mdict = cls.unit_to_dict(unit)
         member = cls.dict_to_member(mdict)
         return member
 
     @classmethod
     def check_container_unit(cls, cunit) -> bool:
-        "check if given unit conforms to expected container"
+        "check if given serialization unit conforms to expected container"
         raise NotImplementedError
 
-    @classmethod
-    def get_member_units_from_cunit(cls, cunit) -> list:
-        "Get members from container unit"
+    def to_dict(self) -> dict:
+        "transform serialization container unit dictionary"
         raise NotImplementedError
-
-    @classmethod
-    def get_members_from_cunit(cls, cunit, message="Invalid container unit") -> list:
-        "Get members from container unit"
-        if cls.check_container_unit(cunit):
-            member_units = cls.get_member_units_from_cunit(cunit)
-            return [cls.unit_to_member(munit) for munit in member_units]
-        else:
-            raise ValueError(message)
 
 
 class _ContainerXmlIo(_ContainerIo):
     "Container input output"
+    cmaker = ContainerMaker("")
+    pmaker = PrimitiveMaker("")
+    primitiveIo = ConstantStringIo.getIoClass("xml")
 
     def __init__(self, container, containerType):
         super().__init__(container, containerType)
 
-    def member_to_element(self, member) -> etree.Element:
-        raise NotImplementedError
-
-    def member_to_unit(self, member):
-        return self.member_to_element(member)
-
-    def to_element(self):
-        raise NotImplementedError
+    @classmethod
+    def element_to_dict(cls, el: etree.Element) -> dict:
+        "transform element to dict"
+        eldict = el.attrib
+        eldict["text"] = el.text
+        eldict["tag"] = el.tag
+        return eldict
 
     @classmethod
-    def element_to_member(cls, member: etree.Element):
-        raise NotImplementedError
+    def unit_to_member(cls, el: etree.Element):
+        "transform element to member"
+        return cls.primitiveIo.from_element(el)
 
-    @classmethod
-    def unit_to_member(cls, member):
-        return cls.element_to_member(member)
+    def member_to_unit(self, member: ConstantString) -> etree.Element:
+        "transform member to element"
+        consio = self.primitiveIo(member)
+        return consio.to_element()
 
-    @classmethod
-    def from_element(cls, element: etree.Element):
-        raise NotImplementedError
+    def member_to_dict(self, member: ConstantString) -> dict:
+        "transform member to element"
+        consio = self.primitiveIo(member)
+        return consio.to_dict()
 
 
 class _ContainerJsonIo(_ContainerIo):
     "Container input output json"
+    cmaker = ContainerMaker("")
+    pmaker = PrimitiveMaker("")
+    primitiveIo = ConstantStringIo.getIoClass("json")
 
     def __init__(self, container, containerType):
         super().__init__(container, containerType)
 
-    def to_dict(self):
-        raise NotImplementedError
+    @classmethod
+    def json_to_dict(cls, jsonstr: str) -> dict:
+        return json.loads(jsonstr)
 
-    def member_to_dict(self, member) -> dict:
-        raise NotImplementedError
+    def member_to_unit(self, member: ConstantString) -> dict:
+        consio = self.primitiveIo(member)
+        return consio.to_dict()
 
     @classmethod
-    def dict_to_member(cls, member: dict):
-        raise NotImplementedError
+    def unit_to_member(cls, cdict: dict):
+        return cls.primitiveIo.from_dict(cdict)
 
     def to_json(self):
-        return json.dumps(self.to_dict(), ensure_ascii=False, indent=2, sort_keys=True)
-
-    @classmethod
-    def from_json(self, jsonstr: str):
-        raise NotImplementedError
+        return dict_dump(self.to_dict())
 
     def toJSON(self):
         return self.to_json()
-
-    @classmethod
-    def from_dict(self, adict: dict):
-        raise NotImplementedError
 
 
 class _ContainerIoBuilder:
@@ -225,6 +230,7 @@ class PairIo(_ContainerIoBuilder):
 
     class XmlIo(_ContainerXmlIo):
         "pair xml io"
+
         cmaker = ContainerMaker("pair")
         pmaker = PrimitiveMaker(choice="constant string")
         primitiveIo = ConstantStringIo.getIoClass("xml")
@@ -232,26 +238,29 @@ class PairIo(_ContainerIoBuilder):
         def __init__(self, pair):
             super().__init__(pair, Pair)
 
-        def member_to_element(self, member: ConstantString) -> etree.Element:
-            "transform member to element"
-            consio = self.primitiveIo(member)
-            return consio.to_element()
-
-        @classmethod
-        def element_to_member(cls, el: etree.Element):
-            "transform element to member"
-            return cls.primitiveIo.from_element(el)
-
         def to_element(self):
             "transform pair to xml"
             str1 = self.container.arg1
             str2 = self.container.arg2
             el = etree.Element("pair")
             el.set("class", self.containerType.__name__)
-            el1 = self.member_to_element(str1)
-            el2 = self.member_to_element(str2)
+            el1 = self.member_to_unit(str1)
+            el2 = self.member_to_unit(str2)
             self.add_members_to_parent(el, [el1, el2])
             return el
+
+        def to_dict(self) -> dict:
+            "to dict pair"
+            str1 = self.container.arg1
+            str2 = self.container.arg2
+            pdict = {}
+            pdict["class"] = self.containerType.__name__
+            pdict["type"] = "pair"
+            member1 = self.member_to_dict(str1)
+            member2 = self.member_to_dict(str2)
+            pdict["members"] = []
+            self.add_members_to_parent(pdict["members"], [member1, member2])
+            return pdict
 
         @classmethod
         def from_element(cls, el: etree.Element):
@@ -260,8 +269,8 @@ class PairIo(_ContainerIoBuilder):
             elclass = el.get("class")
             cls.check_value_error(eltag, "pair", "Given element tag: ")
             cls.check_value_error(elclass, "Pair", "Given element class: ")
-            arg1 = cls.element_to_member(el[0])
-            arg2 = cls.element_to_member(el[1])
+            arg1 = cls.unit_to_member(el[0])
+            arg2 = cls.unit_to_member(el[1])
             pair = cls.cmaker.make(arg1=arg1, arg2=arg2)
             return pair
 
@@ -274,15 +283,6 @@ class PairIo(_ContainerIoBuilder):
         def __init__(self, pair):
             super().__init__(pair, Pair)
 
-        def member_to_dict(self, member: ConstantString) -> dict:
-            consio = self.primitiveIo(member)
-            ioinst = consio.getIoInstance("json")
-            return ioinst.to_dict()
-
-        @classmethod
-        def dict_to_member(cls, cdict: dict) -> ConstantString:
-            return cls.primitiveIo.from_dict(cdict)
-
         def to_dict(self) -> dict:
             "to dict pair"
             str1 = self.container.arg1
@@ -290,8 +290,8 @@ class PairIo(_ContainerIoBuilder):
             pdict = {}
             pdict["class"] = self.containerType.__name__
             pdict["type"] = "pair"
-            member1 = self.member_to_dict(str1)
-            member2 = self.member_to_dict(str2)
+            member1 = self.member_to_unit(str1)
+            member2 = self.member_to_unit(str2)
             pdict["members"] = []
             self.add_members_to_parent(pdict["members"], [member1, member2])
             return pdict
@@ -310,8 +310,8 @@ class PairIo(_ContainerIoBuilder):
             cls.check_value_error(objtype, "pair", "Given object type: ")
             cls.check_value_error(objclass, "Pair", "Given object class: ")
             members = cdict["members"]
-            member1 = cls.dict_to_member(members[0])
-            member2 = cls.dict_to_member(members[1])
+            member1 = cls.unit_to_member(members[0])
+            member2 = cls.unit_to_member(members[1])
             pair = cls.cmaker.make(arg1=member1, arg2=member2)
             return pair
 
@@ -335,14 +335,6 @@ class SingleConstraintPairIo(_ContainerIoBuilder):
         def __init__(self, pair):
             super().__init__(pair, SingleConstraintPair)
 
-        def member_to_element(self, member):
-            ""
-            return self.primitiveIo(member).to_element()
-
-        @classmethod
-        def element_to_member(cls, el: etree.Element):
-            return cls.primitiveIo.from_element(el)
-
         def to_element(self):
             "transform pair to xml"
             el = etree.Element("pair")
@@ -354,17 +346,47 @@ class SingleConstraintPairIo(_ContainerIoBuilder):
             self.add_members_to_parent(el, [el1, el2])
             return el
 
+        def to_dict(self) -> dict:
+            "to dict pair"
+            str1 = self.container.arg1
+            str2 = self.container.arg2
+            pdict = {}
+            pdict["class"] = self.containerType.__name__
+            pdict["type"] = "pair"
+            pdict["constraint"] = dill.dumps(self.container.constfn).hex()
+            member1 = self.member_to_dict(str1)
+            member2 = self.member_to_dict(str2)
+            pdict["members"] = []
+            self.add_members_to_parent(pdict["members"], [member1, member2])
+            return pdict
+
         @classmethod
         def from_element(cls, el: etree.Element):
             "Obtain pair from element"
-            assert el.tag == "pair"
-            assert el.get("class") == "SingleConstraintPair"
-            members = el[0]
-            iocls1 = ConstraintStringIo.getIoClass("xml")
-            arg1 = iocls1.from_element(members[0])
-            arg2 = iocls1.from_element(members[1])
-            pair = SingleConstraintPair(arg1, arg2)
-            assert pair.isValid()
+            eltag = el.tag
+            elclass = el.get("class")
+            cls.check_value_error(eltag, "pair", "Given element tag: ")
+            cls.check_value_error(
+                elclass, "SingleConstraintPair", "Given element class: "
+            )
+            arg1 = cls.unit_to_member(el[0])
+            arg2 = cls.unit_to_member(el[1])
+            pair = cls.cmaker.make(arg1=arg1, arg2=arg2)
+            return pair
+
+        @classmethod
+        def from_dict(cls, cdict: dict):
+            "obtain pair from dict"
+            objtype = cdict.get("type", "")
+            objclass = cdict.get("class", "")
+            cls.check_value_error(objtype, "pair", "Given object type: ")
+            cls.check_value_error(
+                objclass, "DoubleConstraintPair", "Given object class: "
+            )
+            members = cdict["members"]
+            member1 = cls.unit_to_member(members[0])
+            member2 = cls.unit_to_member(members[1])
+            pair = cls.cmaker.make(arg1=member1, arg2=member2)
             return pair
 
     class JsonIo(_ContainerJsonIo):
@@ -376,12 +398,6 @@ class SingleConstraintPairIo(_ContainerIoBuilder):
         def __init__(self, pair):
             super().__init__(pair, SingleConstraintPair)
 
-        def member_to_dict(self, member) -> dict:
-            ""
-            cstrio = self.primitiveIo(member)
-            ioinst = cstrio.getIoInstance("json")
-            return ioinst.to_dict()
-
         def to_dict(self):
             "to dict pair"
             str1 = self.container.arg1
@@ -391,76 +407,106 @@ class SingleConstraintPairIo(_ContainerIoBuilder):
             pdict["type"] = "pair"
             myfn = dill.dumps(self.container.constfn)
             pdict["constraint"] = myfn.hex()
-            member1 = self.member_to_dict(self.container.arg1)
-            member2 = self.member_to_dict(self.container.arg2)
-            pdict["members"] = [member1, member2]
+            member1 = self.member_to_unit(self.container.arg1)
+            member2 = self.member_to_unit(self.container.arg2)
+            pdict["members"] = []
+            self.add_members_to_parent(pdict["members"], [member1, member2])
             return pdict
 
         @classmethod
-        def from_json(self, jsonstr: str):
+        def from_json(cls, jsonstr: str):
             "obtain pair from json object"
             objdict = json.loads(jsonstr)
-            assert objdict["type"] == "pair"
-            assert objdict["class"] == "SingleConstraintPair"
-            members = objdict["members"]
-            member1 = members[0]
-            member2 = members[1]
-            iocls = ConstraintStringIo.getIoClass("json")
-            cstr1 = iocls.from_json(json.dumps(member1))
-            cstr2 = iocls.from_json(json.dumps(member2))
-            pair = SingleConstraintPair(cstr1, cstr2)
-            assert pair.isValid()
+            return cls.from_dict(objdict)
+
+        @classmethod
+        def from_dict(cls, cdict: dict):
+            "obtain pair from dict"
+            objtype = cdict.get("type", "")
+            objclass = cdict.get("class", "")
+            cls.check_value_error(objtype, "pair", "Given element tag: ")
+            cls.check_value_error(
+                objclass, "SingleConstraintPair", "Given element class: "
+            )
+            members = cdict["members"]
+            member1 = cls.unit_to_member(members[0])
+            member2 = cls.unit_to_member(members[1])
+            pair = cls.cmaker.make(arg1=member1, arg2=member2)
             return pair
 
     def getIoInstance(self, render_format: str):
         "io for pair given format"
-        return self.getIoClass(render_format)(self.pair)
+        return self.getIoClass(render_format)(self.container)
 
 
 class DoubleConstraintPairIo(_ContainerIoBuilder):
     "Double Constraint Pair io"
 
     def __init__(self, pair: DoubleConstraintPair):
-        assert pair.isValid()
-        self.pair = pair
+        super().__init__(pair)
 
     class XmlIo(_ContainerXmlIo):
         "constraint double constraint xml io"
+        cmaker = ContainerMaker("double constraint pair")
+        pmaker = PrimitiveMaker(choice="constraint string")
+        primitiveIo = ConstantStringIo.getIoClass("xml")
 
         def __init__(self, pair):
             super().__init__(pair, DoubleConstraintPair)
 
-        def arg2element(self, isFirst=True):
-            ""
-            if isFirst:
-                cstr = self.container.arg1
-            else:
-                cstr = self.container.arg2
-            cstrio = ConstraintStringIo(cstr)
-            ioinst = cstrio.getIoInstance("xml")
-            el = ioinst.to_element()
-            return el
-
         def to_element(self):
             "transform pair to xml"
+            str1 = self.container.arg1
+            str2 = self.container.arg2
             el = etree.Element("pair")
             el.set("class", self.containerType.__name__)
-            myfn = dill.dumps(self.container.constfn)
-            el.set("constraint", myfn.hex())
-            members = etree.Element("members")
-            el1 = self.arg2element(isFirst=True)
-            el2 = self.arg2element(isFirst=False)
-            members.append(el1)
-            members.append(el2)
-            el.append(members)
+            el1 = self.member_to_unit(str1)
+            el2 = self.member_to_unit(str2)
+            self.add_members_to_parent(el, [el1, el2])
             return el
+
+        def to_dict(self):
+            "transform pair to dict"
+            str1 = self.container.arg1
+            str2 = self.container.arg2
+            pdict = {}
+            pdict["class"] = self.containerType.__name__
+            pdict["type"] = "pair"
+            member1 = self.member_to_dict(str1)
+            member2 = self.member_to_dict(str2)
+            pdict["members"] = []
+            self.add_members_to_parent(pdict["members"], [member1, member2])
+            return pdict
+
+        @classmethod
+        def from_dict(cls, cdict: dict):
+            "obtain pair from dict"
+            objtype = cdict.get("type", "")
+            objclass = cdict.get("class", "")
+            cls.check_value_error(objtype, "pair", "Given object type: ")
+            cls.check_value_error(
+                objclass, "DoubleConstraintPair", "Given object class: "
+            )
+            members = cdict["members"]
+            member1 = cls.unit_to_member(members[0])
+            member2 = cls.unit_to_member(members[1])
+            pair = cls.cmaker.make(arg1=member1, arg2=member2)
+            return pair
 
         @classmethod
         def from_element(cls, el: etree.Element):
             "Obtain pair from element"
-            assert el.tag == "pair"
-            assert el.get("class") == "SingleConstraintPair"
-            members = el[0]
+            eltag = el.tag
+            elclass = el.get("class")
+            cls.check_value_error(eltag, "pair", "Given element tag: ")
+            cls.check_value_error(
+                elclass, "DoubleConstraintPair", "Given element class: "
+            )
+            arg1 = cls.unit_to_member(el[0])
+            arg2 = cls.unit_to_member(el[1])
+            pair = cls.cmaker.make(arg1=arg1, arg2=arg2)
+            return pair
+
             iocls1 = ConstraintStringIo.getIoClass("xml")
             arg1 = iocls1.from_element(members[0])
             arg2 = iocls1.from_element(members[1])
@@ -470,50 +516,47 @@ class DoubleConstraintPairIo(_ContainerIoBuilder):
 
     class JsonIo(_ContainerJsonIo):
         "pair json io"
+        cmaker = ContainerMaker("double constraint pair")
+        pmaker = PrimitiveMaker(choice="constraint string")
+        primitiveIo = ConstantStringIo.getIoClass("json")
 
         def __init__(self, pair):
             super().__init__(pair, SingleConstraintPair)
 
-        def arg2dict(self, isFirst=True):
-            ""
-            if isFirst:
-                cstr = self.container.arg1
-            else:
-                cstr = self.container.arg2
-            cstrio = ConstraintStringIo(cstr)
-            ioinst = cstrio.getIoInstance("json")
-            return ioinst.to_dict()
-
         def to_dict(self):
-            "to dict pair"
+            "transform pair to dict"
             str1 = self.container.arg1
             str2 = self.container.arg2
             pdict = {}
             pdict["class"] = self.containerType.__name__
             pdict["type"] = "pair"
-            myfn = dill.dumps(self.container.constfn)
-            pdict["constraint"] = myfn.hex()
-            member1 = self.arg2dict(isFirst=True)
-            member2 = self.arg2dict(isFirst=False)
-            pdict["members"] = [member1, member2]
+            member1 = self.member_to_dict(str1)
+            member2 = self.member_to_dict(str2)
+            pdict["members"] = []
+            self.add_members_to_parent(pdict["members"], [member1, member2])
             return pdict
 
         @classmethod
-        def from_json(self, jsonstr: str):
+        def from_json(cls, jsonstr: str):
             "obtain pair from json object"
             objdict = json.loads(jsonstr)
-            assert objdict["type"] == "pair"
-            assert objdict["class"] == "SingleConstraintPair"
-            members = objdict["members"]
-            member1 = members[0]
-            member2 = members[1]
-            iocls = ConstraintStringIo.getIoClass("json")
-            cstr1 = iocls.from_json(json.dumps(member1))
-            cstr2 = iocls.from_json(json.dumps(member2))
-            pair = SingleConstraintPair(cstr1, cstr2)
-            assert pair.isValid()
+            return cls.from_dict(objdict)
+
+        @classmethod
+        def from_dict(cls, cdict: dict):
+            "obtain pair from dict"
+            objtype = cdict.get("type", "")
+            objclass = cdict.get("class", "")
+            cls.check_value_error(objtype, "pair", "Given object type: ")
+            cls.check_value_error(
+                objclass, "DoubleConstraintPair", "Given object class: "
+            )
+            members = cdict["members"]
+            member1 = cls.unit_to_member(members[0])
+            member2 = cls.unit_to_member(members[1])
+            pair = cls.cmaker.make(arg1=member1, arg2=member2)
             return pair
 
     def getIoInstance(self, render_format: str):
         "io for pair given format"
-        return self.getIoClass(render_format)(self.pair)
+        return self.getIoClass(render_format)(self.container)

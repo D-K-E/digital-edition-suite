@@ -119,6 +119,29 @@ class ConstantStringIo(_PrimitiveIoBuilder):
             root.set("class", self.primitiveType.__name__)
             return root
 
+        def to_dict(self):
+            "render as a dict"
+            pdict = {}
+            pdict["class"] = self.primitiveType.__name__
+            pdict["type"] = "primitive"
+            pdict["value"] = str(self.primitive)
+            return pdict
+
+        @classmethod
+        def from_dict(cls, cdict: dict) -> ConstantString:
+            "render constant string from dict"
+            objtype = cdict.get("type", "")
+            objclass = cdict.get("class", "")
+            cls.check_value_error(
+                objtype, "primitive", messPrefix="Given object type: "
+            )
+            cls.check_value_error(
+                objclass, "ConstantString", messPrefix="Given object class: "
+            )
+            maker = PrimitiveMaker("constant string")
+            constr = maker.make(mystr=cdict["value"])
+            return constr
+
         @classmethod
         def from_element(cls, el: etree.Element) -> ConstantString:
             "from element"
@@ -204,6 +227,15 @@ class ConstraintStringIo(_PrimitiveIoBuilder):
             root.set("constraint", myfn.hex())
             return root
 
+        def to_dict(self):
+            "Default representation in python dict"
+            pdict = {}
+            pdict["class"] = self.primitiveType.__name__
+            pdict["constraint"] = dill.dumps(self.primitive.fn).hex()
+            pdict["type"] = "primitive"
+            pdict["value"] = self.constant_string_to_dict(self.primitive)
+            return pdict
+
         @classmethod
         def from_element(cls, element: etree.Element):
             ""
@@ -218,6 +250,20 @@ class ConstraintStringIo(_PrimitiveIoBuilder):
             constr = cls.text_to_constant_string(cstr)
             maker = PrimitiveMaker("constraint string")
             return maker.make(mystr=constr, fnc=myfn)
+
+        @classmethod
+        def from_dict(cls, cdict: dict) -> ConstraintString:
+            "transform dict to ConstraintString"
+            objclass = cdict.get("class", "")
+            objtype = cdict.get("type", "")
+            cls.check_value_error(objtype, "primitive", "Given object type: ")
+            cls.check_value_error(objclass, "ConstraintString", "Given object class: ")
+            myfn = bytes.fromhex(cdict["constraint"])
+            myfnc = dill.loads(myfn)
+            constrdict = cdict["value"]
+            constr = cls.dict_to_constant_string(constrdict)
+            maker = PrimitiveMaker("constraint string")
+            return maker.make(mystr=constr, fnc=myfnc)
 
     class JsonIo(_PrimitiveJsonIo):
         "Render Constraint String as Json"
@@ -309,6 +355,27 @@ class NonNumericStringIo(_PrimitiveIoBuilder):
             myfn = dill.dumps(self.primitive.fn)
             root.set("constraint", myfn.hex())
             return root
+
+        def to_dict(self):
+            "Default representation in python dict"
+            pdict = {}
+            pdict["class"] = self.primitiveType.__name__
+            pdict["constraint"] = dill.dumps(self.primitive.fn).hex()
+            pdict["type"] = "primitive"
+            pdict["value"] = self.constant_string_to_dict(self.primitive)
+            return pdict
+
+        @classmethod
+        def from_dict(cls, cdict: dict):
+            "make object from given dict"
+            objclass = cdict.get("class", "")
+            objtype = cdict.get("type", "")
+            cls.check_value_error(objclass, "NonNumericString", "Given object class: ")
+            cls.check_value_error(objtype, "primitive", "Given object type: ")
+
+            constr = cls.dict_to_constant_string(cdict["value"])
+            maker = PrimitiveMaker("non numeric string")
+            return maker.make(mystr=constr)
 
         @classmethod
         def from_element(cls, element: etree.Element):

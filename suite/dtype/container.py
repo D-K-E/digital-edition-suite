@@ -740,7 +740,7 @@ class ContainerMaker:
 
     @classmethod
     def from_type(cls, objType, **kwargs):
-        objname = objType.__class_.__name__
+        objname = objType.__name__
         if objname == "Pair":
             arg1, arg2 = kwargs["arg1"], kwargs["arg2"]
             return cls.make_pair(arg1=arg1, arg2=arg2)
