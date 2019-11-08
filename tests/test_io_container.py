@@ -16,12 +16,9 @@ from suite.dtype.primitive import PrimitiveMaker
 from suite.io.iprimitive import ConstraintStringIo
 from suite.io.iprimitive import ConstantStringIo
 from suite.io.iprimitive import NonNumericStringIo
-from suite.io.icontainer import PairIo, SingleConstraintPairIo
-from suite.io.icontainer import DoubleConstraintPairIo
+from suite.io.icontainer import PairIo
 
 from suite.dtype.container import Pair
-from suite.dtype.container import SingleConstraintPair
-from suite.dtype.container import DoubleConstraintPair
 from suite.dtype.container import ContainerMaker
 
 
