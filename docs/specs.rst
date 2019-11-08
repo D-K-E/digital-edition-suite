@@ -158,7 +158,7 @@ Link must have three components :code:`id1, id2, ids`:
 - :code:`id2-ids`: a :code:`Array` whose members are :code:`Pair` composed of:
 
     - :code:`id2`: a :code:`Non Numeric String`
-    - :code:`ids` a :code:`Array` whose members are :code:`Non Numeric String`
+    - :code:`ids` a :code:`Array` whose members are of :code:`Non Numeric String`
 
 :code:`id1` is associated to :code:`id2-ids`.
 The cardinality of the association is 1-1.
