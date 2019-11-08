@@ -12,6 +12,9 @@ All primitives are immutable.
 
 - :code:`Character`: A character is defined to be that which has a unicode
   code point value.
+  
+- :code:`FloatingPoint`: A floating number. Its representation consist of :code:`[-]NumericExpression.NumericExpression`.
+  For example, :code:`64.4253` or :code:`-68.123328`.
 
 - :code:`String`: A string is defined to be a ordered list of characters. 
 
@@ -31,93 +34,13 @@ Containers
 
 All containers are immutable.
 
-- :code:`Pair`: a set with 2 members:
+- :code:`Array`: a set with n members whose elements are of the 
+  same type.
 
-    - a :code:`Constant String`
-    - a :code:`Constant String`
-    
-- :code:`Single Constraint Pair`: a :code:`Pair` whose elements are of
-  :code:`Constraint String` who satisfy the same constraint
-
-- :code:`Double Constraint Pair`: a :code:`Pair` whose elements are of
-  :code:`Constraint String` who satisfy different constraints.
-
-- :code:`Nested Pair`: a :code:`Pair` whose elements are:
-
-    - :code:`Constant String`
-    - :code:`Pair`
-
-- :code:`Constraint Nested Pair`: a :code:`Pair` whose elements are:
-
-    - :code:`Constraint String`
-    - :code:`Pair`
-
-- :code:`Constraint Nested Single Constraint Pair`: a :code:`Pair` whose
-  elements are:
-
-    - :code:`Constraint String`
-    - :code:`Single Constraint Pair`
-
-- :code:`Constraint Nested Double Constraint Pair`: a :code:`Pair` whose
-  elements are:
-
-    - :code:`Constraint String`
-    - :code:`Double Constraint Pair`
-
-- :code:`Tuple`: a set with n members whose elements are of :code:`Constant
-  String`
-
-- :code:`Single Constraint Tuple`: a :code:`Tuple` whose elements are of
-  :code:`Constraint String` that satisfy the same constraint
-
-- :code:`Non Numeric Tuple`: a :code:`Tuple` whose elements are of 
-  :code:`Non Numeric String`
-
-- :code:`Pair Tuple`: a set with n members whose elements are of :code:`Pair`
-
-- :code:`Single Pair Tuple`: a set with n members whose elements are of
-  :code:`Single Constraint Pair`
-
-- :code:`Uniform Pair Tuple`: a set with n members whose elements are of
-  :code:`Single Constraint Pair` that satisfy the same constraint
-
-- :code:`Double Pair Tuple`: a set with n members whose elements are of
-  :code:`Double Constraint Pair`
-
-- :code:`Mixed Pair`: a set with 2 members who are:
-
-    - a :code:`Constant String`
-    - a :code:`Tuple`
-
-
-- :code:`Constraint Mixed Pair`: a set with 2 members who are:
-
-    - a :code:`Constraint String`
-    - a :code:`Tuple`
-
-
-- :code:`Single Constraint Mixed Pair`: a :code:`Pair` whose members are:
-
-    - a :code:`Constraint String`
-
-    - a :code:`Single Constraint Tuple`
-
-- :code:`Uniform Mixed Pair`: a :code:`Pair` whose members are:
-
-    - a :code:`Constraint String`
-
-    - a :code:`Single Constraint Tuple`
-
-    - both satisfy the same condition
-
-- :code:`Nested Single Constraint Mixed Pair`: a :code:`Pair` whose members
-  are:
-
-    - a :code:`Constraint String`
-
-    - a :code:`Single Constraint Mixed Pair`
-
-
+- :code:`Pair`: a set with 2 members whose elements are of different
+  type.
+  
+  
 Format
 ======
 
@@ -140,17 +63,17 @@ Components
 
 Simple must have three components: :code: `id, value, definition`.
 
-- :code:`id`: a :code:`Non Numeric String`
-- :code:`value`: a :code:`Constant String`
-- :code:`definition`: a :code:`Constant String`
+- :code:`id`: a subclass of :code:`Non Numeric String`
+- :code:`value`: a subclass of :code:`Constant String`
+- :code:`definition`: a subclass of :code:`Constant String`
 
 :code:`definition` is associated to :code:`value`.
 The cardinality of the association is 1-1.
-Together their type is :code:`Pair`.
+Together their type is :code:`Pair` of size 2.
 
-The pair :code:`value-definition` is associated to :code:`id`.  
+The array :code:`value-definition` is associated to :code:`id`.  
 The cardinality of the association is 1-1. 
-Together their type is :code:`Constraint Nested Pair`.
+Together their type is :code:`Pair`.
 
 Recommendations
 ++++++++++++++++
@@ -180,11 +103,11 @@ Components
 Combined must have five components: 
 :code:`id1, value, definition, id2, values`:
 
-- :code:`id1`: a :code:`Non Numeric String`
-- :code:`value`: a :code:`Constant String`
-- :code:`definition`: a :code:`Constant String`
-- :code:`id2`: a :code:`Non Numeric String`
-- :code:`values`: a :code:`Single Constraint Tuple`, whose elements are of
+- :code:`id1`: a subclass of :code:`Non Numeric String`
+- :code:`value`: a subclass of :code:`Constant String`
+- :code:`definition`: a subclass of :code:`Constant String`
+- :code:`id2`: a subclass of :code:`Non Numeric String`
+- :code:`values`: a subclass of :code:`Array`, whose elements are of
   :code:`Non Numeric String`
 
 :code:`definition` is associated to :code:`value`.
@@ -194,12 +117,17 @@ Together their type is :code:`Pair`.
 
 :code:`id2` is associated to :code:`values`.
 The cardinality of the association is 1-1.
-Together their type is :code:`Single Constraint Mixed Pair`. The constraint
+Together their type is :code:`Pair`. The constraint
 that applies to both of the components is :code:`Non Numeric String`
 
 
-:code:`id1` is associated to :code:`id2-values`, and to
-:code:`value-definition`. Both associations are 1-1.
+:code:`id2-values` is associated to :code:`value-definition`.
+The cardinality of the association is 1-1.
+Together their type is :code:`Pair`
+
+:code:`id1` is associated to :code:`id2-values-value-definition`.
+The cardinality of the association is 1-1.
+Together their type is :code:`Pair`
 
 
 
@@ -227,21 +155,14 @@ Link must have three components :code:`id1, id2, ids`:
 
 - :code:`id1`: a :code:`Non Numeric String`
 
-- :code:`id2-ids`: a :code:`Single Constraint Mixed Pair` whose members are:
+- :code:`id2-ids`: a :code:`Array` whose members are :code:`Pair` composed of:
 
     - :code:`id2`: a :code:`Non Numeric String`
-    - :code:`ids` a :code:`Single Constraint Tuple` whose constraint is
-      :code:`Non Numeric String`
-
-
-:code:`id2` is associated to :code:`ids`.
-The cardinality of the association is 1-1.
-Together their type is :code:`Single Constraint Mixed Pair`. The constraint
-that applies to both of the components is :code:`Non Numeric String`
-
+    - :code:`ids` a :code:`Array` whose members are :code:`Non Numeric String`
 
 :code:`id1` is associated to :code:`id2-ids`.
-The cardinality of the association is 1-n.
+The cardinality of the association is 1-1.
+Together their type is :code:`Pair`
 
 
 Recommendations
@@ -255,7 +176,7 @@ Link structure may have the following form
 
 .. code:: json
     
-    {"id1": {"id2": ["id3", "id4", "id5"]}}
+    {"id1": {"id2": ["id3", "id4", "id5"], "id6": ["id7", "id8"]}}
  
 
 Content
@@ -263,41 +184,26 @@ Content
 
 There are 5 content types used by this suite:
 
-- Authority: has Simple or Combined structure
+- Singular: has Simple structure
 
-- Relation: has Simple structure
+- Unit: has Combined structure
+
+- Relation: has Combined structure
 
 - Predicate: has Link structure
 
 - Entity: has Link structure
 
-- Entity Predicate Link: has Link structure
+Underlaying Mathematical Object
+--------------------------------
 
-For all documents that have a link structure, their :code:`id2` component must
-be chosen from the :code:`id` component of a Relation document.
+The underlying mathematical object for our model is
+a directed hyper graph where nodes are singular. 
+Unit is a hyperedge, just like a relation. Predicate or
+Entity is a grouping of units with different relations.
 
-
-If Authority document has a Combined structure, its :code:`id2` component must
-be chosen from the :code:`id` component of a Relation document.
-
-Predicate document may contain an :code:`id1` component of another field from
-a Predicate document among its :code:`ids` component, that is predicates can
-refer to other predicates.:code:`ids` component may also contain :code:`id` or
-:code:`id1` component of an Authority document. Predicate document must not
-contain other component content besides the specified options.
-
-
-Entity document may contain an :code:`id1` component of another field from
-a Entity document among its :code:`ids` component, that is entities can
-refer to other entities. :code:`ids` component may also contain :code:`id` or
-:code:`id1` component of an Authority document. Entity document must not
-contain other component content besides the specified options.
-
-
-Entity Predicate Link document must contain :code:`id1` component of a field
-in Entity Document. :code:`ids` must consist of :code:`id1` component of
-fields of a Predicate Document.
-
+Relation models a differentiable function, so suite has to ensure
+that they stay continous and differentiable.
 
 Recommendations
 ===============
